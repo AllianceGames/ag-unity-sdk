@@ -10,9 +10,6 @@
         "AllianceGames",
         "Infrastructure",
         "Multiplayer",
-        "Chromia",
-        "Rell",
-        "Postchain"
     ],
     "dependencies": {
         "com.unity.netcode.gameobjects": "1.12.2",
