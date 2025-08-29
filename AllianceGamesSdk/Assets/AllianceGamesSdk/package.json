@@ -9,7 +9,7 @@
     "keywords": [
         "AllianceGames",
         "Infrastructure",
-        "Multiplayer",
+        "Multiplayer"
     ],
     "dependencies": {
         "com.unity.netcode.gameobjects": "1.12.2",
