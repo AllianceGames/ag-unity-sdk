@@ -10,6 +10,11 @@
             Handles network communication, message processing, and game state synchronization.
             </summary>
         </member>
+        <member name="E:AllianceGamesSdk.Server.AllianceGamesServer.OnTerminationWarning">
+            <summary>
+            Event that is triggered 30s before the server is terminated. The session needs to resolve within this time, otherwise it gets aborted.
+            </summary>
+        </member>
         <member name="P:AllianceGamesSdk.Server.AllianceGamesServer.PubKey">
             <summary>
             Gets the public key of this server instance.
@@ -73,15 +78,6 @@
             </summary>
             <exception cref="T:System.InvalidOperationException">Thrown when the random generator is not accessible during health check.</exception>
         </member>
-        <member name="M:AllianceGamesSdk.Server.AllianceGamesServer.Finalize">
-            <summary>
-            Finalizer that ensures proper cleanup of server resources.
-            </summary>
-            <remarks>
-            Logs a fatal error and attempts to cancel any pending operations if the server was not properly stopped.
-            To avoid this, always call Stop() before letting the server instance be garbage collected.
-            </remarks>
-        </member>
         <member name="M:AllianceGamesSdk.Server.AllianceGamesServer.Create(AllianceGamesSdk.Common.Transport.ITransport,AllianceGamesSdk.Server.INodeConfig,AllianceGamesSdk.Common.Transport.IHttpClient)">
             <summary>
             Creates a new instance of the AllianceGamesServer.
@@ -91,12 +87,22 @@
             <param name="httpClient">Optional HTTP client implementation. If null, a default implementation will be used.</param>
             <returns>A new AllianceGamesServer instance, or null if configuration could not be loaded.</returns>
         </member>
-        <member name="M:AllianceGamesSdk.Server.AllianceGamesServer.Start(System.Threading.CancellationToken)">
+        <member name="M:AllianceGamesSdk.Server.AllianceGamesServer.CreateTest(AllianceGamesSdk.Common.Transport.ITransport,AllianceGamesSdk.Server.LocalTestNodeConfig,AllianceGamesSdk.Common.Transport.IHttpClient,System.Threading.CancellationToken)">
+            <summary>
+            Creates a new instance of the AllianceGamesServer for local testing.
+            </summary>
+            <param name="transport">The transport layer implementation to use for network communication.</param>
+            <param name="testConfig">The test configuration to use for the server.</param>
+            <param name="httpClient">Optional HTTP client implementation. If null, a default implementation will be used.</param>
+            <param name="ct">Cancellation token to cancel the creation operation.</param>
+            <returns>A new AllianceGamesServer instance, or null if creation fails.</returns>
+        </member>
+        <member name="M:AllianceGamesSdk.Server.AllianceGamesServer.Run(System.Func{System.Threading.Tasks.Task{System.String}})">
             <summary>
             Starts the server and initializes all network connections.
             </summary>
-            <param name="ct">Cancellation token to stop the server startup process.</param>
-            <returns>True if the server started successfully, false otherwise.</returns>
+            <param name="entrypoint">Entrypoint of the game. Must return the game result as a JSON string.</param>
+            <returns>A task that completes when the game is finished.</returns>
         </member>
         <member name="M:AllianceGamesSdk.Server.AllianceGamesServer.UseProfiler(AllianceGamesSdk.Server.Profiler.ProfilerSystemResourceType[])">
             <summary>
@@ -158,18 +164,6 @@
             <param name="milliseconds">Duration of the timeout in milliseconds.</param>
             <param name="ct">Optional cancellation token to cancel the timeout.</param>
             <returns>An ITimeout object that can be used to cancel the timeout.</returns>
-        </member>
-        <member name="M:AllianceGamesSdk.Server.AllianceGamesServer.Stop(System.String)">
-            <summary>
-            Stops the server and writes the final proof to disk.
-            </summary>
-            <param name="resultJson">Optional JSON string containing final game state or results.</param>
-            <returns>A task that completes when the server has fully stopped.</returns>
-        </member>
-        <member name="M:AllianceGamesSdk.Server.AllianceGamesServer.Dispose">
-            <summary>
-            Releases all resources used by the server.
-            </summary>
         </member>
         <member name="T:AllianceGamesSdk.Server.AllianceGamesServerExtensions">
             <summary>
@@ -352,9 +346,14 @@
             Gets the port for health checks.
             </summary>
         </member>
-        <member name="P:AllianceGamesSdk.Server.INodeConfig.SessionPath">
+        <member name="P:AllianceGamesSdk.Server.INodeConfig.RedisUrl">
             <summary>
-            Gets the session file path.
+            Gets the Redis URL.
+            </summary>
+        </member>
+        <member name="P:AllianceGamesSdk.Server.INodeConfig.RedisChannel">
+            <summary>
+            Gets the Redis channel.
             </summary>
         </member>
         <member name="M:AllianceGamesSdk.Server.INodeConfig.SessionData``2">
@@ -436,9 +435,6 @@
         <member name="P:AllianceGamesSdk.Server.NodeConfigBase.HealthPort">
             <inheritdoc />
         </member>
-        <member name="P:AllianceGamesSdk.Server.NodeConfigBase.SessionPath">
-            <inheritdoc />
-        </member>
         <member name="P:AllianceGamesSdk.Server.NodeConfigBase.IsWitness">
             <inheritdoc />
         </member>
@@ -451,6 +447,12 @@
             </summary>
         </member>
         <member name="P:AllianceGamesSdk.Server.NodeConfigBase.InHealthCheck">
+            <inheritdoc />
+        </member>
+        <member name="P:AllianceGamesSdk.Server.NodeConfigBase.RedisUrl">
+            <inheritdoc />
+        </member>
+        <member name="P:AllianceGamesSdk.Server.NodeConfigBase.RedisChannel">
             <inheritdoc />
         </member>
         <member name="P:AllianceGamesSdk.Server.NodeConfigBase.InitializationTimeoutMs">
@@ -484,12 +486,11 @@
             Gets the session data string.
             </summary>
         </member>
-        <member name="M:AllianceGamesSdk.Server.NodeConfigBase.Load(AllianceGamesSdk.Server.INodeConfig,AllianceGamesSdk.Common.Transport.IHttpClient)">
+        <member name="M:AllianceGamesSdk.Server.NodeConfigBase.Load(AllianceGamesSdk.Server.INodeConfig)">
             <summary>
             Loads a node configuration based on the provided parameters.
             </summary>
             <param name="injectedConfig">Optional pre-configured node configuration.</param>
-            <param name="httpClient">HTTP client for network communication.</param>
             <returns>A node configuration instance or null if loading fails.</returns>
         </member>
         <member name="T:AllianceGamesSdk.Server.InjectedNodeConfig">
@@ -502,7 +503,7 @@
             Gets the file system abstraction used by this configuration.
             </summary>
         </member>
-        <member name="M:AllianceGamesSdk.Server.InjectedNodeConfig.#ctor(System.String,System.String,AllianceGamesSdk.Server.Node,System.Collections.Generic.HashSet{AllianceGamesSdk.Server.Client},System.Collections.Generic.HashSet{AllianceGamesSdk.Server.Node},Chromia.ISignatureProvider,Serilog.ILogger,System.Nullable{System.Int32},System.String,System.Int32,System.Int32,System.Boolean,System.Int32,System.Int32,System.Int32,System.Int32,System.String,System.IO.Abstractions.IFileSystem,System.Nullable{Chromia.Buffer})">
+        <member name="M:AllianceGamesSdk.Server.InjectedNodeConfig.#ctor(System.String,System.String,AllianceGamesSdk.Server.Node,System.Collections.Generic.HashSet{AllianceGamesSdk.Server.Client},System.Collections.Generic.HashSet{AllianceGamesSdk.Server.Node},Chromia.ISignatureProvider,Serilog.ILogger,System.Nullable{System.Int32},System.String,System.Int32,System.Int32,System.Boolean,System.Int32,System.Int32,System.Int32,System.Int32,System.IO.Abstractions.IFileSystem,System.Nullable{Chromia.Buffer})">
             <summary>
             Initializes a new instance of the InjectedNodeConfig class.
             </summary>
@@ -522,7 +523,6 @@
             <param name="connectionTimeoutMs">Timeout for connection attempts.</param>
             <param name="connectionRetries">Number of connection retry attempts.</param>
             <param name="connectionRetryTimeoutMs">Timeout between connection retries.</param>
-            <param name="sessionPath">Optional path for session files.</param>
             <param name="fileSystem">Optional file system abstraction.</param>
             <param name="pubKey">Optional public key override.</param>
         </member>

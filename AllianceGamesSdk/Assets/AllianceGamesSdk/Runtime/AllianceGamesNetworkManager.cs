@@ -61,11 +61,12 @@ namespace AllianceGamesSdk.Unity.Netcode
         }
 
         public async UniTask<AllianceGamesServer> StartServer(
+            Func<UniTask<string>> entrypoint,
             INodeConfig nodeConfig = null,
             ILogger logger = null
         )
         {
-            transport.SetServerConfig(nodeConfig, logger);
+            transport.SetServerConfig(entrypoint, nodeConfig, logger);
 
             var initCs = new UniTaskCompletionSource<bool>();
             transport.OnStarted += () => initCs.TrySetResult(true);
@@ -73,15 +74,6 @@ namespace AllianceGamesSdk.Unity.Netcode
             transport.OnShutdown += () => OnShutdown?.Invoke();
             base.StartServer();
             return await initCs.Task ? transport.Server : null;
-        }
-
-        public async UniTask StopServer(string result)
-        {
-            var cts = new UniTaskCompletionSource();
-            transport.sessionResult = result;
-            transport.OnShutdown += () => cts.TrySetResult();
-            transport.Shutdown();
-            await cts.Task;
         }
     }
 }

@@ -30,6 +30,15 @@
             <param name="config">Client configuration settings.</param>
             <returns>A new AllianceGamesClient instance, or null if creation fails.</returns>
         </member>
+        <member name="M:AllianceGamesSdk.Client.AllianceGamesClient.CreateTest(AllianceGamesSdk.Common.Transport.ITransport,AllianceGamesSdk.Client.LocalTestClientConfig,System.Threading.CancellationToken)">
+            <summary>
+            Creates a new instance of the AllianceGamesClient for local testing.
+            </summary>
+            <param name="transport">The transport layer implementation to use for network communication.</param>
+            <param name="testConfig">The test configuration to use for the client.</param>
+            <param name="ct">Cancellation token to cancel the creation operation.</param>
+            <returns>A new AllianceGamesClient instance, or null if creation fails.</returns>
+        </member>
         <member name="M:AllianceGamesSdk.Client.AllianceGamesClient.Start(System.Threading.CancellationToken)">
             <summary>
             Starts the client and initializes all network connections.

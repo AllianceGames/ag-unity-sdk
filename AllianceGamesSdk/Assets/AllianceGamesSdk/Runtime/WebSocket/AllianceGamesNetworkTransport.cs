@@ -7,6 +7,7 @@ using Cysharp.Threading.Tasks;
 using System;
 using System.Collections.Concurrent;
 using System.Linq;
+using System.Threading;
 using Unity.Netcode;
 using UnityEngine;
 using Buffer = Chromia.Buffer;
@@ -44,6 +45,8 @@ namespace AllianceGamesSdk.Transport.Unity.Netcode
         internal IClientConfig clientConfig = null;
 
         // server
+        internal Func<UniTask<string>> entrypoint = null;
+        internal CancellationTokenSource serverCts = default;
         internal string sessionResult = null;
         internal INodeConfig nodeConfig = null;
 
@@ -69,7 +72,7 @@ namespace AllianceGamesSdk.Transport.Unity.Netcode
             );
 
             this.logger = logger;
-            transport = new Unity.WebSocketTransport(logger);
+            transport = WebSocketTransportFactory.Get(logger);
         }
 
         internal void SetClientConfig(
@@ -98,10 +101,12 @@ namespace AllianceGamesSdk.Transport.Unity.Netcode
         }
 
         internal void SetServerConfig(
+            Func<UniTask<string>> entrypoint,
             INodeConfig nodeConfig,
             ILogger logger
         )
         {
+            this.entrypoint = entrypoint;
             this.nodeConfig = nodeConfig;
             this.logger = logger;
             transport = WebSocketTransportFactory.Get(logger);
@@ -129,7 +134,6 @@ namespace AllianceGamesSdk.Transport.Unity.Netcode
                 LogError(e, "Failed to initialize WebSocketTransport");
             }
         }
-
         public override bool StartClient()
         {
             if (isStarted)
@@ -264,15 +268,8 @@ namespace AllianceGamesSdk.Transport.Unity.Netcode
                     LogError("Failed to write OnClientDisconnect to queue");
                 }
             };
-            var success = await server.Start(default).AsUniTask();
-            if (success)
-            {
-                OnStarted?.Invoke();
-            }
-            else
-            {
-                OnFailure?.Invoke();
-            }
+            await server.Run(() => entrypoint.Invoke().AttachExternalCancellation(serverCts.Token).AsTask()).AsUniTask();
+            OnStarted?.Invoke();
         }
 
         public override async void DisconnectLocalClient()
@@ -357,7 +354,7 @@ namespace AllianceGamesSdk.Transport.Unity.Netcode
             }
             else if (server != null)
             {
-                await server.Stop(sessionResult).AsUniTask();
+                serverCts?.Cancel();
                 server = null;
             }
 
