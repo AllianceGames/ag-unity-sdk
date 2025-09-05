@@ -162,7 +162,14 @@ namespace AllianceGamesSdk.Transport.Unity.Netcode
 
         private async UniTask StartClientInternal()
         {
-            client = AllianceGamesClient.Create(transport, clientConfig);
+            if (clientConfig is LocalTestClientConfig)
+            {
+                client = await AllianceGamesClient.CreateTest(transport, clientConfig as LocalTestClientConfig);
+            }
+            else
+            {
+                client = AllianceGamesClient.Create(transport, clientConfig);
+            }
             if (client == null)
             {
                 OnFailure?.Invoke();
@@ -209,7 +216,14 @@ namespace AllianceGamesSdk.Transport.Unity.Netcode
 
         private async UniTask StartServerInternal()
         {
-            server = AllianceGamesServer.Create(transport, nodeConfig);
+            if (nodeConfig is LocalTestNodeConfig)
+            {
+                server = await AllianceGamesServer.CreateTest(transport, nodeConfig as LocalTestNodeConfig);
+            }
+            else
+            {
+                server = AllianceGamesServer.Create(transport, nodeConfig);
+            }
             if (server == null)
             {
                 OnFailure?.Invoke();
