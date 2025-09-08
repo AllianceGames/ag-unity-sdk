@@ -297,7 +297,9 @@ namespace AllianceGamesSdk.Transport.Unity.Netcode
                     LogError("Failed to write OnClientDisconnect to queue");
                 }
             };
-            await server.Run(() => entrypoint().AttachExternalCancellation(serverCts.Token).AsTask()).AsUniTask();
+            await UniTask.RunOnThreadPool(() =>
+                server.Run(() => entrypoint().AttachExternalCancellation(serverCts.Token).AsTask())
+            ).AsUniTask();
             OnStarted?.Invoke();
         }
 
