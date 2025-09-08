@@ -45,7 +45,7 @@ namespace AllianceGamesSdk.Transport.Unity.Netcode
         internal IClientConfig clientConfig = null;
 
         // server
-        internal Func<UniTask<string>> entrypoint = null;
+        internal UniTask<string>? entrypoint = null;
         internal CancellationTokenSource serverCts = default;
         internal string sessionResult = null;
         internal INodeConfig nodeConfig = null;
@@ -101,7 +101,7 @@ namespace AllianceGamesSdk.Transport.Unity.Netcode
         }
 
         internal void SetServerConfig(
-            Func<UniTask<string>> entrypoint,
+            UniTask<string> entrypoint,
             INodeConfig nodeConfig,
             ILogger logger
         )
@@ -289,7 +289,7 @@ namespace AllianceGamesSdk.Transport.Unity.Netcode
                     LogError("Failed to write OnClientDisconnect to queue");
                 }
             };
-            await server.Run(() => entrypoint.Invoke().AttachExternalCancellation(serverCts.Token).AsTask()).AsUniTask();
+            await server.Run(() => entrypoint.Value.AttachExternalCancellation(serverCts.Token).AsTask()).AsUniTask();
             OnStarted?.Invoke();
         }
 
