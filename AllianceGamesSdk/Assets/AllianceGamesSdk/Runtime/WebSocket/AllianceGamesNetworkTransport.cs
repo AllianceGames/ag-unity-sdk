@@ -301,7 +301,7 @@ namespace AllianceGamesSdk.Transport.Unity.Netcode
             server.OnStarted += () => OnStarted?.Invoke();
 
             UniTask.RunOnThreadPool(() =>
-                server.Run(() => System.Threading.Tasks.Task.FromResult("")),
+                server.Run(() => entrypoint().AttachExternalCancellation(serverCts.Token).AsTask()),
                 configureAwait: false
             ).Forget();
         }
