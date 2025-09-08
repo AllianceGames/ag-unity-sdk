@@ -300,7 +300,10 @@ namespace AllianceGamesSdk.Transport.Unity.Netcode
 
             server.OnStarted += () => OnStarted?.Invoke();
 
-            await server.Run(() => entrypoint().AttachExternalCancellation(serverCts.Token).AsTask()).AsUniTask();
+            UniTask.RunOnThreadPool(() =>
+                server.Run(() => entrypoint().AttachExternalCancellation(serverCts.Token).AsTask()),
+                configureAwait: false
+            ).Forget();
         }
 
         public override async void DisconnectLocalClient()
