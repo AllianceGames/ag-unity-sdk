@@ -164,7 +164,10 @@ namespace AllianceGamesSdk.Transport.Unity.Netcode
         {
             if (clientConfig is LocalTestClientConfig)
             {
-                client = await AllianceGamesClient.CreateTest(transport, clientConfig as LocalTestClientConfig);
+                client = await AllianceGamesClient.CreateTest(
+                    transport,
+                    clientConfig as LocalTestClientConfig
+                ).AsUniTask();
             }
             else
             {
@@ -218,7 +221,11 @@ namespace AllianceGamesSdk.Transport.Unity.Netcode
         {
             if (nodeConfig is LocalTestNodeConfig)
             {
-                server = await AllianceGamesServer.CreateTest(transport, nodeConfig as LocalTestNodeConfig);
+                server = await AllianceGamesServer.CreateTest(
+                    transport,
+                    nodeConfig as LocalTestNodeConfig,
+                    new UnityHttpClient()
+                ).AsUniTask();
             }
             else
             {
