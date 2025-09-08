@@ -61,7 +61,7 @@ namespace AllianceGamesSdk.Unity.Netcode
         }
 
         public async UniTask<AllianceGamesServer> StartServer(
-            Func<UniTask<string>> entrypoint,
+            UniTask<string> entrypoint,
             INodeConfig nodeConfig = null,
             ILogger logger = null
         )
