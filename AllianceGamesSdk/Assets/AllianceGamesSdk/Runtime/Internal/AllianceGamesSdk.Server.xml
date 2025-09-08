@@ -10,6 +10,11 @@
             Handles network communication, message processing, and game state synchronization.
             </summary>
         </member>
+        <member name="E:AllianceGamesSdk.Server.AllianceGamesServer.OnStarted">
+            <summary>
+            Event that is triggered when the server is started.
+            </summary>
+        </member>
         <member name="E:AllianceGamesSdk.Server.AllianceGamesServer.OnTerminationWarning">
             <summary>
             Event that is triggered 30s before the server is terminated. The session needs to resolve within this time, otherwise it gets aborted.
