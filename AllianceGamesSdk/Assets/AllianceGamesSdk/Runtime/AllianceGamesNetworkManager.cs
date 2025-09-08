@@ -23,7 +23,7 @@ namespace AllianceGamesSdk.Unity.Netcode
             //base.NetworkConfig.NetworkTransport = new WebSocketTransport();
         }
 
-        public async UniTask<AllianceGamesClient> StartClient(
+        public async UniTask<AllianceGamesClient> CreateClient(
             string connectionAddress,
             Buffer coordinatorPubkey,
             string sessionId,
@@ -31,11 +31,16 @@ namespace AllianceGamesSdk.Unity.Netcode
             ILogger logger = null
         )
         {
-            transport.SetClientConfig(connectionAddress, coordinatorPubkey, sessionId, signatureProvider, logger);
-            return await StartClient(signatureProvider);
+            return await transport.CreateClient(
+                connectionAddress,
+                coordinatorPubkey,
+                sessionId,
+                signatureProvider,
+                logger
+            );
         }
 
-        public async UniTask<AllianceGamesClient> StartLocalClient(
+        public async UniTask<AllianceGamesClient> CreateLocalClient(
             string sessionId,
             string sessionData,
             string connectAddress,
@@ -44,11 +49,17 @@ namespace AllianceGamesSdk.Unity.Netcode
             ILogger logger = null
         )
         {
-            transport.SetClientConfig(sessionId, sessionData, connectAddress, coordinatorPubkey, signatureProvider, logger);
-            return await StartClient(signatureProvider);
+            return await transport.CreateClient(
+                sessionId,
+                sessionData,
+                connectAddress,
+                coordinatorPubkey,
+                signatureProvider,
+                logger
+            );
         }
 
-        private async UniTask<AllianceGamesClient> StartClient(SignatureProvider signatureProvider)
+        public async UniTask<bool> StartClient(SignatureProvider signatureProvider)
         {
             NetworkConfig.ConnectionData = signatureProvider.PubKey.Bytes;
             var initCs = new UniTaskCompletionSource<bool>();
@@ -56,24 +67,27 @@ namespace AllianceGamesSdk.Unity.Netcode
             transport.OnFailure += () => initCs.TrySetResult(false);
             transport.OnShutdown += () => OnShutdown?.Invoke();
             base.StartClient();
-            var ret = await initCs.Task;
-            return ret ? transport.Client : null;
+            return await initCs.Task;
         }
 
-        public async UniTask<AllianceGamesServer> StartServer(
-            UniTask<string> entrypoint,
+        public async UniTask<AllianceGamesServer> CreateServer(
             INodeConfig nodeConfig = null,
             ILogger logger = null
         )
         {
-            transport.SetServerConfig(entrypoint, nodeConfig, logger);
+            return await transport.CreateServer(nodeConfig, logger);
+        }
+
+        public async UniTask<bool> StartServer(Func<UniTask<string>> entrypoint)
+        {
+            transport.entrypoint = entrypoint;
 
             var initCs = new UniTaskCompletionSource<bool>();
             transport.OnStarted += () => initCs.TrySetResult(true);
             transport.OnFailure += () => initCs.TrySetResult(false);
             transport.OnShutdown += () => OnShutdown?.Invoke();
             base.StartServer();
-            return await initCs.Task ? transport.Server : null;
+            return await initCs.Task;
         }
     }
 }

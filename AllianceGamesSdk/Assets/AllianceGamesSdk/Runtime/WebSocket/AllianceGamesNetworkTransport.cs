@@ -45,7 +45,7 @@ namespace AllianceGamesSdk.Transport.Unity.Netcode
         internal IClientConfig clientConfig = null;
 
         // server
-        internal UniTask<string>? entrypoint = null;
+        internal Func<UniTask<string>> entrypoint = null;
         internal CancellationTokenSource serverCts = default;
         internal string sessionResult = null;
         internal INodeConfig nodeConfig = null;
@@ -53,7 +53,7 @@ namespace AllianceGamesSdk.Transport.Unity.Netcode
         public uint WebSocketProtocolHeader => 40902u;
         public override ulong ServerClientId => 0;
 
-        internal void SetClientConfig(
+        internal async UniTask<AllianceGamesClient> CreateClient(
             string connectAddress,
             Buffer coordinatorPubkey,
             string sessionId,
@@ -73,9 +73,10 @@ namespace AllianceGamesSdk.Transport.Unity.Netcode
 
             this.logger = logger;
             transport = WebSocketTransportFactory.Get(logger);
+            return await CreateClient(clientConfig);
         }
 
-        internal void SetClientConfig(
+        internal async UniTask<AllianceGamesClient> CreateClient(
             string sessionId,
             string sessionData,
             string connectAddress,
@@ -98,18 +99,48 @@ namespace AllianceGamesSdk.Transport.Unity.Netcode
 
             this.logger = logger;
             transport = WebSocketTransportFactory.Get(logger);
+            return await CreateClient(clientConfig);
         }
 
-        internal void SetServerConfig(
-            UniTask<string> entrypoint,
+        private async UniTask<AllianceGamesClient> CreateClient(IClientConfig clientConfig)
+        {
+            if (clientConfig is LocalTestClientConfig)
+            {
+                client = await AllianceGamesClient.CreateTest(
+                    transport,
+                    clientConfig as LocalTestClientConfig
+                ).AsUniTask();
+            }
+            else
+            {
+                client = AllianceGamesClient.Create(transport, clientConfig);
+            }
+
+            return client;
+        }
+
+        internal async UniTask<AllianceGamesServer> CreateServer(
             INodeConfig nodeConfig,
             ILogger logger
         )
         {
-            this.entrypoint = entrypoint;
-            this.nodeConfig = nodeConfig;
             this.logger = logger;
             transport = WebSocketTransportFactory.Get(logger);
+
+            if (nodeConfig is LocalTestNodeConfig)
+            {
+                server = await AllianceGamesServer.CreateTest(
+                    transport,
+                    nodeConfig as LocalTestNodeConfig,
+                    new UnityHttpClient()
+                ).AsUniTask();
+            }
+            else
+            {
+                server = AllianceGamesServer.Create(transport, nodeConfig);
+            }
+
+            return server;
         }
 
         public override async void Initialize(NetworkManager networkManager = null)
@@ -162,17 +193,6 @@ namespace AllianceGamesSdk.Transport.Unity.Netcode
 
         private async UniTask StartClientInternal()
         {
-            if (clientConfig is LocalTestClientConfig)
-            {
-                client = await AllianceGamesClient.CreateTest(
-                    transport,
-                    clientConfig as LocalTestClientConfig
-                ).AsUniTask();
-            }
-            else
-            {
-                client = AllianceGamesClient.Create(transport, clientConfig);
-            }
             if (client == null)
             {
                 OnFailure?.Invoke();
@@ -219,18 +239,6 @@ namespace AllianceGamesSdk.Transport.Unity.Netcode
 
         private async UniTask StartServerInternal()
         {
-            if (nodeConfig is LocalTestNodeConfig)
-            {
-                server = await AllianceGamesServer.CreateTest(
-                    transport,
-                    nodeConfig as LocalTestNodeConfig,
-                    new UnityHttpClient()
-                ).AsUniTask();
-            }
-            else
-            {
-                server = AllianceGamesServer.Create(transport, nodeConfig);
-            }
             if (server == null)
             {
                 OnFailure?.Invoke();
@@ -289,7 +297,7 @@ namespace AllianceGamesSdk.Transport.Unity.Netcode
                     LogError("Failed to write OnClientDisconnect to queue");
                 }
             };
-            await server.Run(() => entrypoint.Value.AttachExternalCancellation(serverCts.Token).AsTask()).AsUniTask();
+            await server.Run(() => entrypoint().AttachExternalCancellation(serverCts.Token).AsTask()).AsUniTask();
             OnStarted?.Invoke();
         }
 
