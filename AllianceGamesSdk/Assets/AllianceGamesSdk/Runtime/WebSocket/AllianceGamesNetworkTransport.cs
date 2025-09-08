@@ -299,6 +299,7 @@ namespace AllianceGamesSdk.Transport.Unity.Netcode
             };
 
             server.OnStarted += () => OnStarted?.Invoke();
+            serverCts = new CancellationTokenSource();
             await server.Run(() => entrypoint().AttachExternalCancellation(serverCts.Token).AsTask()).AsUniTask();
         }
 
