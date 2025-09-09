@@ -14,7 +14,7 @@ namespace AllianceGamesSdk.Unity.Netcode
     {
         public event Action OnShutdown;
 
-        private AllianceGamesNetworkTransport transport => NetworkConfig.NetworkTransport as AllianceGamesNetworkTransport;
+        internal AllianceGamesNetworkTransport transport => NetworkConfig.NetworkTransport as AllianceGamesNetworkTransport;
 
         private void Awake()
         {

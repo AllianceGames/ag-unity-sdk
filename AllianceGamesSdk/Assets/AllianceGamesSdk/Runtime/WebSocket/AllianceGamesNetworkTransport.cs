@@ -2,6 +2,7 @@ using AllianceGamesSdk.Client;
 using AllianceGamesSdk.Common.Transport;
 using AllianceGamesSdk.Server;
 using AllianceGamesSdk.Unity;
+using AllianceGamesSdk.Unity.Netcode;
 using Chromia;
 using Cysharp.Threading.Tasks;
 using System;
@@ -270,7 +271,7 @@ namespace AllianceGamesSdk.Transport.Unity.Netcode
                 var message = new Message()
                 {
                     Type = NetworkEvent.Connect,
-                    ClientId = (ulong)server.Clients.ToList().IndexOf(pubKey) + 1,
+                    ClientId = server.GetClientId(pubKey),
                     Payload = null
                 };
                 if (!messageQueue.Writer.TryWrite(message))
@@ -289,7 +290,7 @@ namespace AllianceGamesSdk.Transport.Unity.Netcode
                 var message = new Message()
                 {
                     Type = NetworkEvent.Disconnect,
-                    ClientId = (ulong)server.Clients.ToList().IndexOf(pubKey) + 1,
+                    ClientId = server.GetClientId(pubKey),
                     Payload = null
                 };
                 if (!messageQueue.Writer.TryWrite(message))
@@ -366,7 +367,7 @@ namespace AllianceGamesSdk.Transport.Unity.Netcode
                 }
                 else
                 {
-                    var client = server.Clients.ToList()[(int)clientId - 1];
+                    var client = server.GetClientPubKey(clientId);
                     await server.Send(WebSocketProtocolHeader, client, buffer, default).AsUniTask();
                 }
             }
