@@ -200,17 +200,6 @@ namespace AllianceGamesSdk.Transport.Unity.Netcode
                 return;
             }
 
-            var connectMessage = new Message()
-            {
-                Type = NetworkEvent.Connect,
-                ClientId = 0,
-                Payload = null
-            };
-            if (!messageQueue.Writer.TryWrite(connectMessage))
-            {
-                LogError("Failed to write connectMessage message to queue");
-            }
-
             client.RegisterMessageHandler(WebSocketProtocolHeader, (buffer) =>
             {
 
@@ -230,6 +219,16 @@ namespace AllianceGamesSdk.Transport.Unity.Netcode
             var success = await client.Start(default).AsUniTask();
             if (success)
             {
+                var connectMessage = new Message()
+                {
+                    Type = NetworkEvent.Connect,
+                    ClientId = 0,
+                    Payload = null
+                };
+                if (!messageQueue.Writer.TryWrite(connectMessage))
+                {
+                    LogError("Failed to write connectMessage message to queue");
+                }
                 OnStarted?.Invoke();
             }
             else
