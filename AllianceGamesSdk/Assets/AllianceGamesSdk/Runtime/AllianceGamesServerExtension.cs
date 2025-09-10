@@ -1,6 +1,7 @@
 using AllianceGamesSdk.Server;
-using Chromia;
+using System;
 using System.Linq;
+using Buffer = Chromia.Buffer;
 
 namespace AllianceGamesSdk.Unity.Netcode
 {
@@ -8,7 +9,12 @@ namespace AllianceGamesSdk.Unity.Netcode
     {
         public static ulong GetClientId(this AllianceGamesServer server, Buffer pubKey)
         {
-            return (ulong)server.Clients.ToList().IndexOf(pubKey) + 1;
+            var id = server.Clients.ToList().IndexOf(pubKey);
+            if (id == -1)
+            {
+                throw new ArgumentOutOfRangeException($"Client with public key {pubKey.Parse()} not found");
+            }
+            return (ulong)id + 1;
         }
 
         public static ulong GetClientId(this AllianceGamesNetworkManager networkManager, Buffer pubKey)
