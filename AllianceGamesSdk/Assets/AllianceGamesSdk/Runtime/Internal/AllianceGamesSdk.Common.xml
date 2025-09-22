@@ -40,7 +40,7 @@
             Default path for session proxy endpoint.
             </summary>
         </member>
-        <member name="P:AllianceGamesSdk.Common.IConfig.PubKey">
+        <member name="P:AllianceGamesSdk.Common.IConfig.IdentifierPubKey">
             <summary>
             Gets the public key of this instance.
             </summary>

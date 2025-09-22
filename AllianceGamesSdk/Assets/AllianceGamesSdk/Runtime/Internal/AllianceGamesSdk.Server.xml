@@ -400,7 +400,7 @@
         <member name="P:AllianceGamesSdk.Server.NodeConfigBase.SessionId">
             <inheritdoc />
         </member>
-        <member name="P:AllianceGamesSdk.Server.NodeConfigBase.PubKey">
+        <member name="P:AllianceGamesSdk.Server.NodeConfigBase.IdentifierPubKey">
             <inheritdoc />
         </member>
         <member name="P:AllianceGamesSdk.Server.NodeConfigBase.Coordinator">

@@ -58,6 +58,7 @@ namespace AllianceGamesSdk.Transport.Unity.Netcode
             string connectAddress,
             Buffer coordinatorPubkey,
             string sessionId,
+            Buffer identifierPubKey,
             SignatureProvider signatureProvider,
             ILogger logger = null
         )
@@ -66,6 +67,7 @@ namespace AllianceGamesSdk.Transport.Unity.Netcode
                 sessionId,
                 connectAddress,
                 coordinatorPubkey,
+                identifierPubKey,
                 signatureProvider,
                 new UniTaskRunner(),
                 new UnityHttpClient(),

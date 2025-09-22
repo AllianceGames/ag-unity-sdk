@@ -162,7 +162,7 @@
         <member name="P:AllianceGamesSdk.Client.ClientConfig.CoordinatorPubKey">
             <inheritdoc />
         </member>
-        <member name="P:AllianceGamesSdk.Client.ClientConfig.PubKey">
+        <member name="P:AllianceGamesSdk.Client.ClientConfig.IdentifierPubKey">
             <inheritdoc />
         </member>
         <member name="P:AllianceGamesSdk.Client.ClientConfig.SignatureProvider">
@@ -209,25 +209,27 @@
         <member name="P:AllianceGamesSdk.Client.ClientConfig.SessionProxyPath">
             <inheritdoc />
         </member>
-        <member name="M:AllianceGamesSdk.Client.ClientConfig.#ctor(System.String,System.Uri,Chromia.Buffer,Chromia.SignatureProvider,AllianceGamesSdk.Common.ITaskRunner,AllianceGamesSdk.Common.Transport.IHttpClient,Serilog.ILogger)">
+        <member name="M:AllianceGamesSdk.Client.ClientConfig.#ctor(System.String,System.Uri,Chromia.Buffer,Chromia.Buffer,Chromia.SignatureProvider,AllianceGamesSdk.Common.ITaskRunner,AllianceGamesSdk.Common.Transport.IHttpClient,Serilog.ILogger)">
             <summary>
             Initializes a new instance of the ClientConfig class.
             </summary>
             <param name="sessionId">Unique identifier for the game session.</param>
             <param name="coordinatorUri">URI of the coordinator node.</param>
             <param name="coordinatorPubKey">Public key of the coordinator node.</param>
+            <param name="identifierPubKey">Public key of the client.</param>
             <param name="signatureProvider">Provider for cryptographic operations.</param>
             <param name="taskRunner">Optional task runner. If null, a default implementation will be used.</param>
             <param name="httpClient">Optional HTTP client. If null, a default implementation will be used.</param>
             <param name="logger">Optional logger. If null, a default implementation will be used.</param>
         </member>
-        <member name="M:AllianceGamesSdk.Client.ClientConfig.#ctor(System.String,System.String,Chromia.Buffer,Chromia.SignatureProvider,AllianceGamesSdk.Common.ITaskRunner,AllianceGamesSdk.Common.Transport.IHttpClient,Serilog.ILogger)">
+        <member name="M:AllianceGamesSdk.Client.ClientConfig.#ctor(System.String,System.String,Chromia.Buffer,Chromia.Buffer,Chromia.SignatureProvider,AllianceGamesSdk.Common.ITaskRunner,AllianceGamesSdk.Common.Transport.IHttpClient,Serilog.ILogger)">
             <summary>
             Initializes a new instance of the ClientConfig class using a string address.
             </summary>
             <param name="sessionId">Unique identifier for the game session.</param>
             <param name="coordinatorAddress">String address of the coordinator node.</param>
             <param name="coordinatorPubKey">Public key of the coordinator node.</param>
+            <param name="identifierPubKey">Public key of the client.</param>
             <param name="signatureProvider">Provider for cryptographic operations.</param>
             <param name="taskRunner">Optional task runner. If null, a default implementation will be used.</param>
             <param name="httpClient">Optional HTTP client. If null, a default implementation will be used.</param>
@@ -263,7 +265,7 @@
             Gets the provider for cryptographic operations.
             </summary>
         </member>
-        <member name="P:AllianceGamesSdk.Client.ClientTestConfig.PubKey">
+        <member name="P:AllianceGamesSdk.Client.ClientTestConfig.IdentifierPubKey">
             <summary>
             Gets the public key associated with this client's signature provider.
             </summary>

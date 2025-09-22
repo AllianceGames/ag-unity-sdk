@@ -27,6 +27,7 @@ namespace AllianceGamesSdk.Unity.Netcode
             string connectionAddress,
             Buffer coordinatorPubkey,
             string sessionId,
+            Buffer identifierPubKey,
             SignatureProvider signatureProvider,
             ILogger logger = null
         )
@@ -35,6 +36,7 @@ namespace AllianceGamesSdk.Unity.Netcode
                 connectionAddress,
                 coordinatorPubkey,
                 sessionId,
+                identifierPubKey,
                 signatureProvider,
                 logger
             );
@@ -59,9 +61,9 @@ namespace AllianceGamesSdk.Unity.Netcode
             );
         }
 
-        public async UniTask<bool> StartClient(SignatureProvider signatureProvider)
+        public new async UniTask<bool> StartClient()
         {
-            NetworkConfig.ConnectionData = signatureProvider.PubKey.Bytes;
+            NetworkConfig.ConnectionData = transport.clientConfig.IdentifierPubKey.Bytes;
             var initCs = new UniTaskCompletionSource<bool>();
             transport.OnStarted += () => initCs.TrySetResult(true);
             transport.OnFailure += () => initCs.TrySetResult(false);
