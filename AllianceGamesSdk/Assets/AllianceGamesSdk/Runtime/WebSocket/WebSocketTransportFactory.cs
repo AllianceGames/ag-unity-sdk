@@ -3,7 +3,7 @@ using Serilog;
 
 namespace AllianceGamesSdk.Transport.Unity
 {
-    public class WebSocketTransportFactory
+    internal class WebSocketTransportFactory
     {
         public static ITransport Get(ILogger logger)
         {

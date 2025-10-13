@@ -18,7 +18,7 @@ namespace AllianceGamesSdk.Transport.Unity.Netcode
 {
     public class AllianceGamesNetworkTransport : NetworkTransport
     {
-        private enum Mode { None, Client, Server }
+        private const int LOW_QUEUE_MAX_SIZE = 256;
         private struct Message
         {
             public NetworkEvent Type;
@@ -37,10 +37,17 @@ namespace AllianceGamesSdk.Transport.Unity.Netcode
 
         private AllianceGamesClient client = null;
         private AllianceGamesServer server = null;
-        private readonly System.Threading.Channels.Channel<Message> messageQueue
+        private readonly System.Threading.Channels.Channel<Message> highPriorityReceive
             = System.Threading.Channels.Channel.CreateUnbounded<Message>();
+        private readonly System.Threading.Channels.Channel<Message> lowPriorityReceive
+            = System.Threading.Channels.Channel.CreateUnbounded<Message>();
+        private readonly System.Threading.Channels.Channel<(ArraySegment<byte>, ulong)> highPrioritySend
+            = System.Threading.Channels.Channel.CreateUnbounded<(ArraySegment<byte>, ulong)>();
+        private readonly WebSocketLowPriorityQueue lowPrioritySend
+            = new WebSocketLowPriorityQueue(LOW_QUEUE_MAX_SIZE);
         private bool isStarted = false;
         private ILogger logger = null;
+        private CancellationTokenSource senderCts = null;
 
         // client
         internal IClientConfig clientConfig = null;
@@ -150,6 +157,8 @@ namespace AllianceGamesSdk.Transport.Unity.Netcode
         {
             try
             {
+                senderCts = new CancellationTokenSource();
+                SenderLoop().Forget();
                 if (networkManager.IsClient)
                 {
                     await StartClientInternal();
@@ -168,6 +177,7 @@ namespace AllianceGamesSdk.Transport.Unity.Netcode
                 LogError(e, "Failed to initialize WebSocketTransport");
             }
         }
+
         public override bool StartClient()
         {
             if (isStarted)
@@ -204,18 +214,19 @@ namespace AllianceGamesSdk.Transport.Unity.Netcode
 
             client.RegisterMessageHandler(WebSocketProtocolHeader, (buffer) =>
             {
-
-                var payload = new ArraySegment<byte>(buffer.Bytes);
+                var bytes = buffer.Bytes;
+                if (bytes == null || bytes.Length == 0)
+                {
+                    return;
+                }
+                var highPriority = bytes[0] == 1;
                 var message = new Message()
                 {
                     Type = NetworkEvent.Data,
                     ClientId = ServerClientId,
-                    Payload = payload
+                    Payload = new ArraySegment<byte>(bytes, 1, bytes.Length - 1)
                 };
-                if (!messageQueue.Writer.TryWrite(message))
-                {
-                    LogError("Failed to write WebSocketProtocolHeader message to queue");
-                }
+                WriteMessage(message, highPriority);
             });
 
             var success = await client.Start(default).AsUniTask();
@@ -227,10 +238,7 @@ namespace AllianceGamesSdk.Transport.Unity.Netcode
                     ClientId = 0,
                     Payload = null
                 };
-                if (!messageQueue.Writer.TryWrite(connectMessage))
-                {
-                    LogError("Failed to write connectMessage message to queue");
-                }
+                WriteMessage(connectMessage, true);
                 OnStarted?.Invoke();
             }
             else
@@ -252,20 +260,23 @@ namespace AllianceGamesSdk.Transport.Unity.Netcode
             server.Clients.ToList().ForEach(client => connectedClients.TryAdd(client, false));
             server.RegisterMessageHandler(WebSocketProtocolHeader, async (pubKey, buffer) =>
             {
+                var bytes = buffer.Bytes;
+                if (bytes == null || bytes.Length == 0)
+                {
+                    return;
+                }
+
                 await startupTcs.Task;
 
-                var payload = new ArraySegment<byte>(buffer.Bytes);
                 var sender = (ulong)server.Clients.ToList().IndexOf(pubKey) + 1;
+                var highPriority = bytes[0] == 1;
                 var message = new Message()
                 {
                     Type = NetworkEvent.Data,
                     ClientId = sender,
-                    Payload = payload
+                    Payload = new ArraySegment<byte>(bytes, 1, bytes.Length - 1)
                 };
-                if (!messageQueue.Writer.TryWrite(message))
-                {
-                    LogError("Failed to write WebSocketProtocolHeader message to queue");
-                }
+                WriteMessage(message, highPriority);
             });
             server.OnClientConnect += (pubKey) =>
             {
@@ -275,10 +286,7 @@ namespace AllianceGamesSdk.Transport.Unity.Netcode
                     ClientId = server.GetClientId(pubKey),
                     Payload = null
                 };
-                if (!messageQueue.Writer.TryWrite(message))
-                {
-                    LogError("Failed to write OnClientConnect to queue");
-                }
+                WriteMessage(message, true);
 
                 connectedClients[pubKey] = true;
                 if (connectedClients.Values.All(v => v))
@@ -294,10 +302,7 @@ namespace AllianceGamesSdk.Transport.Unity.Netcode
                     ClientId = server.GetClientId(pubKey),
                     Payload = null
                 };
-                if (!messageQueue.Writer.TryWrite(message))
-                {
-                    LogError("Failed to write OnClientDisconnect to queue");
-                }
+                WriteMessage(message, true);
             };
 
             server.OnStarted += () => OnStarted?.Invoke();
@@ -329,18 +334,27 @@ namespace AllianceGamesSdk.Transport.Unity.Netcode
         {
             try
             {
-                if (!messageQueue.Reader.TryRead(out var message))
+                if (highPriorityReceive.Reader.TryRead(out var highPriorityMessage))
+                {
+                    clientId = highPriorityMessage.ClientId;
+                    payload = highPriorityMessage.Payload;
+                    receiveTime = Time.realtimeSinceStartup;
+                    return highPriorityMessage.Type;
+                }
+                else if (lowPriorityReceive.Reader.TryRead(out var lowPriorityMessage))
+                {
+                    clientId = lowPriorityMessage.ClientId;
+                    payload = lowPriorityMessage.Payload;
+                    receiveTime = Time.realtimeSinceStartup;
+                    return lowPriorityMessage.Type;
+                }
+                else
                 {
                     clientId = 0;
                     payload = default;
                     receiveTime = 0;
                     return NetworkEvent.Nothing;
                 }
-
-                clientId = message.ClientId;
-                payload = message.Payload;
-                receiveTime = Time.realtimeSinceStartup;
-                return message.Type;
             }
             catch (Exception e)
             {
@@ -352,7 +366,7 @@ namespace AllianceGamesSdk.Transport.Unity.Netcode
             }
         }
 
-        public override async void Send(ulong clientId, ArraySegment<byte> payload, NetworkDelivery networkDelivery)
+        public override void Send(ulong clientId, ArraySegment<byte> payload, NetworkDelivery networkDelivery)
         {
             try
             {
@@ -361,15 +375,22 @@ namespace AllianceGamesSdk.Transport.Unity.Netcode
                     return;
                 }
 
-                var buffer = Buffer.From(payload);
-                if (clientId == ServerClientId)
+                var highPriority = networkDelivery == NetworkDelivery.Reliable
+                    || networkDelivery == NetworkDelivery.ReliableFragmentedSequenced
+                    || networkDelivery == NetworkDelivery.ReliableSequenced;
+                if (highPriority)
                 {
-                    await client.Send(WebSocketProtocolHeader, buffer, default).AsUniTask();
+                    if (!highPrioritySend.Writer.TryWrite((payload, clientId)))
+                    {
+                        LogError($"Failed to write message to high priority send queue");
+                    }
                 }
                 else
                 {
-                    var client = server.GetClientPubKey(clientId);
-                    await server.Send(WebSocketProtocolHeader, client, buffer, default).AsUniTask();
+                    if (!lowPrioritySend.Enqueue(payload, clientId, networkDelivery))
+                    {
+                        LogError($"Failed to write message to low priority send queue");
+                    }
                 }
             }
             catch (Exception e)
@@ -391,8 +412,68 @@ namespace AllianceGamesSdk.Transport.Unity.Netcode
                 server = null;
             }
 
+            senderCts?.Cancel();
+            senderCts?.Dispose();
+            senderCts = null;
+
+            highPrioritySend.Writer.TryComplete();
+            highPriorityReceive.Writer.TryComplete();
+            lowPriorityReceive.Writer.TryComplete();
+
             isStarted = false;
             OnShutdown?.Invoke();
+        }
+
+        private async UniTaskVoid SenderLoop()
+        {
+            while (!senderCts.IsCancellationRequested)
+            {
+                while (highPrioritySend.Reader.TryRead(out var high))
+                {
+                    await Send(high.Item1, high.Item2, true);
+                }
+
+                if (lowPrioritySend.TryDequeue(out var payload, out var clientId) && payload != null && payload.Count > 0)
+                {
+                    await Send(payload, clientId, false);
+                }
+
+                var waitHi = highPrioritySend.Reader.WaitToReadAsync(senderCts.Token).AsUniTask();
+                var waitLo = lowPrioritySend.WaitForItemAsync(senderCts.Token);
+                await UniTask.WhenAny(waitHi, waitLo);
+            }
+        }
+
+        private async UniTask Send(ArraySegment<byte> payload, ulong clientId, bool highPriority)
+        {
+            var extendedPayload = FrameWithPriorityByte(payload, highPriority);
+            var buffer = Buffer.From(extendedPayload);
+            if (clientId == ServerClientId)
+            {
+                await client.Send(WebSocketProtocolHeader, buffer, default).AsUniTask();
+            }
+            else
+            {
+                var client = server.GetClientPubKey(clientId);
+                await server.Send(WebSocketProtocolHeader, client, buffer, default).AsUniTask();
+            }
+        }
+
+        private void WriteMessage(Message message, bool highPriority)
+        {
+            var queue = highPriority ? highPriorityReceive : lowPriorityReceive;
+            if (!queue.Writer.TryWrite(message))
+            {
+                LogError("Failed to write message to queue");
+            }
+        }
+
+        private ArraySegment<byte> FrameWithPriorityByte(ArraySegment<byte> src, bool high)
+        {
+            var arr = new byte[src.Count + 1];
+            arr[0] = high ? (byte)1 : (byte)0;
+            Array.Copy(src.Array!, src.Offset, arr, 1, src.Count);
+            return new ArraySegment<byte>(arr);
         }
 
         private void LogError(string message)
