@@ -220,12 +220,11 @@ namespace AllianceGamesSdk.Transport.Unity.Netcode
                     return;
                 }
                 var highPriority = bytes[0] == 1;
-                var payload = bytes.Skip(1).ToArray();
                 var message = new Message()
                 {
                     Type = NetworkEvent.Data,
                     ClientId = ServerClientId,
-                    Payload = payload
+                    Payload = UnframeWithPriorityByte(buffer.Bytes)
                 };
                 WriteMessage(message, highPriority);
             });
@@ -271,12 +270,11 @@ namespace AllianceGamesSdk.Transport.Unity.Netcode
 
                 var sender = (ulong)server.Clients.ToList().IndexOf(pubKey) + 1;
                 var highPriority = bytes[0] == 1;
-                var payload = bytes.Skip(1).ToArray();
                 var message = new Message()
                 {
                     Type = NetworkEvent.Data,
                     ClientId = sender,
-                    Payload = payload
+                    Payload = UnframeWithPriorityByte(buffer.Bytes)
                 };
                 WriteMessage(message, highPriority);
             });
@@ -475,6 +473,18 @@ namespace AllianceGamesSdk.Transport.Unity.Netcode
             var arr = new byte[src.Count + 1];
             arr[0] = high ? (byte)1 : (byte)0;
             Array.Copy(src.Array!, src.Offset, arr, 1, src.Count);
+            return new ArraySegment<byte>(arr);
+        }
+
+        private ArraySegment<byte> UnframeWithPriorityByte(ArraySegment<byte> src)
+        {
+            if (src == null || src.Count <= 1)
+            {
+                return default;
+            }
+
+            var arr = new byte[src.Count - 1];
+            Array.Copy(src.Array!, src.Offset + 1, arr, 0, src.Count - 1);
             return new ArraySegment<byte>(arr);
         }
 
