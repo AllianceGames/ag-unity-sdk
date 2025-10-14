@@ -220,11 +220,12 @@ namespace AllianceGamesSdk.Transport.Unity.Netcode
                     return;
                 }
                 var highPriority = bytes[0] == 1;
+                var payload = bytes.Skip(1).ToArray();
                 var message = new Message()
                 {
                     Type = NetworkEvent.Data,
                     ClientId = ServerClientId,
-                    Payload = new ArraySegment<byte>(bytes, 1, bytes.Length - 1)
+                    Payload = payload
                 };
                 WriteMessage(message, highPriority);
             });
@@ -270,11 +271,12 @@ namespace AllianceGamesSdk.Transport.Unity.Netcode
 
                 var sender = (ulong)server.Clients.ToList().IndexOf(pubKey) + 1;
                 var highPriority = bytes[0] == 1;
+                var payload = bytes.Skip(1).ToArray();
                 var message = new Message()
                 {
                     Type = NetworkEvent.Data,
                     ClientId = sender,
-                    Payload = new ArraySegment<byte>(bytes, 1, bytes.Length - 1)
+                    Payload = payload
                 };
                 WriteMessage(message, highPriority);
             });
