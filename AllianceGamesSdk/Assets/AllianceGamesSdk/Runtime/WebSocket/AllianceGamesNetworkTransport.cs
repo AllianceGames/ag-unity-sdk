@@ -19,6 +19,7 @@ namespace AllianceGamesSdk.Transport.Unity.Netcode
     public class AllianceGamesNetworkTransport : NetworkTransport
     {
         private const int LOW_QUEUE_MAX_SIZE = 256;
+        private const int MAX_HIGH_BURST = 32;
         private struct Message
         {
             public NetworkEvent Type;
@@ -429,9 +430,11 @@ namespace AllianceGamesSdk.Transport.Unity.Netcode
         {
             while (!senderCts.IsCancellationRequested)
             {
-                while (highPrioritySend.Reader.TryRead(out var high))
+                var burst = 0;
+                while (burst < MAX_HIGH_BURST && highPrioritySend.Reader.TryRead(out var high))
                 {
                     await Send(high.Item1, high.Item2);
+                    burst++;
                 }
 
                 if (lowPrioritySend.TryDequeue(out var payload, out var clientId) && payload != null && payload.Count > 0)
@@ -450,12 +453,12 @@ namespace AllianceGamesSdk.Transport.Unity.Netcode
             var buffer = Buffer.From(payload);
             if (clientId == ServerClientId)
             {
-                await client.Send(WebSocketProtocolHeader, buffer, default).AsUniTask();
+                await client.Send(WebSocketProtocolHeader, buffer, senderCts.Token).AsUniTask();
             }
             else
             {
                 var client = server.GetClientPubKey(clientId);
-                await server.Send(WebSocketProtocolHeader, client, buffer, default).AsUniTask();
+                await server.Send(WebSocketProtocolHeader, client, buffer, senderCts.Token).AsUniTask();
             }
         }
 
