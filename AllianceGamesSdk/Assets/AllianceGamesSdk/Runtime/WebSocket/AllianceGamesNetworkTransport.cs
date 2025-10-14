@@ -378,16 +378,17 @@ namespace AllianceGamesSdk.Transport.Unity.Netcode
                 var highPriority = networkDelivery == NetworkDelivery.Reliable
                     || networkDelivery == NetworkDelivery.ReliableFragmentedSequenced
                     || networkDelivery == NetworkDelivery.ReliableSequenced;
+                var framedPayload = FrameWithPriorityByte(payload, highPriority);
                 if (highPriority)
                 {
-                    if (!highPrioritySend.Writer.TryWrite((payload, clientId)))
+                    if (!highPrioritySend.Writer.TryWrite((framedPayload, clientId)))
                     {
                         LogError($"Failed to write message to high priority send queue");
                     }
                 }
                 else
                 {
-                    if (!lowPrioritySend.Enqueue(payload, clientId, networkDelivery))
+                    if (!lowPrioritySend.Enqueue(framedPayload, clientId, networkDelivery))
                     {
                         LogError($"Failed to write message to low priority send queue");
                     }
@@ -430,12 +431,12 @@ namespace AllianceGamesSdk.Transport.Unity.Netcode
             {
                 while (highPrioritySend.Reader.TryRead(out var high))
                 {
-                    await Send(high.Item1, high.Item2, true);
+                    await Send(high.Item1, high.Item2);
                 }
 
                 if (lowPrioritySend.TryDequeue(out var payload, out var clientId) && payload != null && payload.Count > 0)
                 {
-                    await Send(payload, clientId, false);
+                    await Send(payload, clientId);
                 }
 
                 var waitHi = highPrioritySend.Reader.WaitToReadAsync(senderCts.Token).AsUniTask();
@@ -444,10 +445,9 @@ namespace AllianceGamesSdk.Transport.Unity.Netcode
             }
         }
 
-        private async UniTask Send(ArraySegment<byte> payload, ulong clientId, bool highPriority)
+        private async UniTask Send(ArraySegment<byte> payload, ulong clientId)
         {
-            var extendedPayload = FrameWithPriorityByte(payload, highPriority);
-            var buffer = Buffer.From(extendedPayload);
+            var buffer = Buffer.From(payload);
             if (clientId == ServerClientId)
             {
                 await client.Send(WebSocketProtocolHeader, buffer, default).AsUniTask();
