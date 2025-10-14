@@ -17,13 +17,11 @@ namespace AllianceGamesSdk.Transport.Unity
         private readonly System.Threading.Channels.Channel<byte[]> messageChannel
             = System.Threading.Channels.Channel.CreateUnbounded<byte[]>();
 
-        private readonly SemaphoreSlim semaphore = new SemaphoreSlim(1, 1);
-
         internal WebSocketConnection(IWebSocket webSocket, ILogger logger)
         {
             this.webSocket = webSocket;
             this.logger = logger;
-            webSocket.OnMessage += data => messageChannel.Writer.WriteAsync(data);
+            webSocket.OnMessage += data => messageChannel.Writer.TryWrite(data);
             webSocket.OnClose += (code, reason) =>
             {
                 logger?.Information("[Unity] WebSocketConnection: Closed with code {Code} and reason {Reason}", code, reason);
@@ -34,27 +32,23 @@ namespace AllianceGamesSdk.Transport.Unity
             };
         }
 
-        public async Task Send(byte[] message, CancellationToken ct)
+        public Task Send(byte[] message, CancellationToken ct)
         {
             if (webSocket == null || webSocket.ReadyState != WebSocketState.Open)
             {
                 logger?.Error($"Cannot send on closed socket.");
-                return;
+                return Task.CompletedTask;
             }
 
             try
             {
-                await semaphore.WaitAsync(ct).AsUniTask();
                 webSocket.Send(message);
             }
             catch (Exception e)
             {
                 logger?.Error(e, $"Error while running send task for WebSocket.");
             }
-            finally
-            {
-                semaphore.Release();
-            }
+            return Task.CompletedTask;
         }
 
         public async IAsyncEnumerable<byte[]> Receive([EnumeratorCancellation] CancellationToken ct)

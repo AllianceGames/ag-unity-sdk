@@ -41,7 +41,6 @@ namespace AllianceGamesSdk.Transport.Unity
             uri = builder.Uri;
             logger.Information("[Unity] WebSocketTransport: Changed scheme to {Uri}", uri);
 
-            // TODO: maybe we should use native websocket from javascript when in webgl
             var webSocket = new WebSocketSharp.WebSocket(uri.ToString());
             logger.Information("[Unity] WebSocketTransport: Created WebSocket");
             webSocket.EnableRedirection = true;
