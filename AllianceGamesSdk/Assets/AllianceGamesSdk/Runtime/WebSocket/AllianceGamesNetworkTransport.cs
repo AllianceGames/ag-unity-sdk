@@ -18,8 +18,11 @@ namespace AllianceGamesSdk.Transport.Unity.Netcode
 {
     public class AllianceGamesNetworkTransport : NetworkTransport
     {
-        private const int LOW_QUEUE_MAX_SIZE = 256;
-        private const int MAX_HIGH_BURST = 32;
+        [SerializeField]
+        private int lowQueueMaxSize = 256;
+        [SerializeField]
+        private int highQueueMaxBurst = 32;
+
         private struct Message
         {
             public NetworkEvent Type;
@@ -44,8 +47,7 @@ namespace AllianceGamesSdk.Transport.Unity.Netcode
             = System.Threading.Channels.Channel.CreateUnbounded<Message>();
         private readonly System.Threading.Channels.Channel<(ArraySegment<byte>, ulong)> highPrioritySend
             = System.Threading.Channels.Channel.CreateUnbounded<(ArraySegment<byte>, ulong)>();
-        private readonly WebSocketLowPriorityQueue lowPrioritySend
-            = new WebSocketLowPriorityQueue(LOW_QUEUE_MAX_SIZE);
+        private readonly WebSocketLowPriorityQueue lowPrioritySend;
         private bool isStarted = false;
         private ILogger logger = null;
         private CancellationTokenSource senderCts = null;
@@ -61,6 +63,11 @@ namespace AllianceGamesSdk.Transport.Unity.Netcode
 
         public uint WebSocketProtocolHeader => 40902u;
         public override ulong ServerClientId => 0;
+
+        AllianceGamesNetworkTransport()
+        {
+            lowPrioritySend = new WebSocketLowPriorityQueue(lowQueueMaxSize);
+        }
 
         internal async UniTask<AllianceGamesClient> CreateClient(
             string connectAddress,
@@ -431,7 +438,7 @@ namespace AllianceGamesSdk.Transport.Unity.Netcode
             while (!senderCts.IsCancellationRequested)
             {
                 var burst = 0;
-                while (burst < MAX_HIGH_BURST && highPrioritySend.Reader.TryRead(out var high))
+                while (burst < highQueueMaxBurst && highPrioritySend.Reader.TryRead(out var high))
                 {
                     await Send(high.Item1, high.Item2);
                     burst++;
