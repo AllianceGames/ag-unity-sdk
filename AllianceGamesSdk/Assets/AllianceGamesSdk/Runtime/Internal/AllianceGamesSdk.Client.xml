@@ -22,6 +22,11 @@
             Gets whether the client is currently connected to the server.
             </summary>
         </member>
+        <member name="E:AllianceGamesSdk.Client.AllianceGamesClient.OnDisconnect">
+            <summary>
+            Event that is triggered when the client disconnects from the server.
+            </summary>
+        </member>
         <member name="M:AllianceGamesSdk.Client.AllianceGamesClient.Create(AllianceGamesSdk.Common.Transport.ITransport,AllianceGamesSdk.Client.IClientConfig)">
             <summary>
             Creates a new instance of the AllianceGamesClient.
