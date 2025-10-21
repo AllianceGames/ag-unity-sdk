@@ -41,13 +41,10 @@ namespace AllianceGamesSdk.Transport.Unity.Netcode
 
         private AllianceGamesClient client = null;
         private AllianceGamesServer server = null;
-        private readonly System.Threading.Channels.Channel<Message> highPriorityReceive
-            = System.Threading.Channels.Channel.CreateUnbounded<Message>();
-        private readonly System.Threading.Channels.Channel<Message> lowPriorityReceive
-            = System.Threading.Channels.Channel.CreateUnbounded<Message>();
-        private readonly System.Threading.Channels.Channel<(ArraySegment<byte>, ulong)> highPrioritySend
-            = System.Threading.Channels.Channel.CreateUnbounded<(ArraySegment<byte>, ulong)>();
-        private readonly WebSocketLowPriorityQueue lowPrioritySend;
+        private System.Threading.Channels.Channel<Message> highPriorityReceive = null;
+        private System.Threading.Channels.Channel<Message> lowPriorityReceive = null;
+        private System.Threading.Channels.Channel<(ArraySegment<byte>, ulong)> highPrioritySend = null;
+        private WebSocketLowPriorityQueue lowPrioritySend = null;
         private bool isStarted = false;
         private ILogger logger = null;
         private CancellationTokenSource senderCts = null;
@@ -63,11 +60,6 @@ namespace AllianceGamesSdk.Transport.Unity.Netcode
 
         public uint WebSocketProtocolHeader => 40902u;
         public override ulong ServerClientId => 0;
-
-        AllianceGamesNetworkTransport()
-        {
-            lowPrioritySend = new WebSocketLowPriorityQueue(lowQueueMaxSize);
-        }
 
         internal async UniTask<AllianceGamesClient> CreateClient(
             string connectAddress,
@@ -165,7 +157,12 @@ namespace AllianceGamesSdk.Transport.Unity.Netcode
         {
             try
             {
+                highPriorityReceive = System.Threading.Channels.Channel.CreateUnbounded<Message>();
+                lowPriorityReceive = System.Threading.Channels.Channel.CreateUnbounded<Message>();
+                highPrioritySend = System.Threading.Channels.Channel.CreateUnbounded<(ArraySegment<byte>, ulong)>();
+                lowPrioritySend = new WebSocketLowPriorityQueue(lowQueueMaxSize);
                 senderCts = new CancellationTokenSource();
+
                 SenderLoop().Forget();
                 if (networkManager.IsClient)
                 {
@@ -428,6 +425,11 @@ namespace AllianceGamesSdk.Transport.Unity.Netcode
             highPrioritySend.Writer.TryComplete();
             highPriorityReceive.Writer.TryComplete();
             lowPriorityReceive.Writer.TryComplete();
+
+            highPriorityReceive = null;
+            lowPriorityReceive = null;
+            highPrioritySend = null;
+            lowPrioritySend = null;
 
             isStarted = false;
             OnShutdown?.Invoke();
