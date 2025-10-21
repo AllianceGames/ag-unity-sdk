@@ -453,7 +453,7 @@ namespace AllianceGamesSdk.Transport.Unity.Netcode
 
                 var waitHi = highPrioritySend.Reader.WaitToReadAsync(senderCts.Token).AsUniTask();
                 var waitLo = lowPrioritySend.WaitForItemAsync(senderCts.Token);
-                await UniTask.WhenAny(waitHi, waitLo);
+                await UniTask.WhenAny(waitHi, waitLo).AttachExternalCancellation(senderCts.Token).AsUniTask();
             }
         }
 
