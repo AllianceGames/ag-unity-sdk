@@ -39,6 +39,8 @@ namespace AllianceGamesSdk.Transport.Unity
             public event Action<CloseStatusCode, string> OnClose;
             public event Action<string> OnError;
 
+            public ulong WaitTime => 0;
+
             private readonly string url;
             private readonly UniTaskCompletionSource closeTcs = new UniTaskCompletionSource();
 

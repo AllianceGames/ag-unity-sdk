@@ -10,6 +10,7 @@ using System.Collections.Concurrent;
 using System.Linq;
 using System.Threading;
 using Unity.Netcode;
+using Unity.Profiling;
 using UnityEngine;
 using Buffer = Chromia.Buffer;
 using ILogger = Serilog.ILogger;
@@ -18,17 +19,19 @@ namespace AllianceGamesSdk.Transport.Unity.Netcode
 {
     public class AllianceGamesNetworkTransport : NetworkTransport
     {
-        [SerializeField]
-        private int lowQueueMaxSize = 256;
-        [SerializeField]
-        private int highQueueMaxBurst = 32;
-
         private struct Message
         {
             public NetworkEvent Type;
             public ulong ClientId;
             public ArraySegment<byte> Payload;
         }
+
+        // Profiler markers for automatic timing tracking
+        private static readonly ProfilerCategory ProfilerCat = ProfilerCategory.Network;
+        private static readonly TimedProfilerMarker ProfilerPollEvent = new(ProfilerCat, "AGTransport/PollEvent");
+        private static readonly TimedProfilerMarker ProfilerSend = new(ProfilerCat, "AGTransport/Send");
+        private static readonly TimedProfilerMarker ProfilerSendAsync = new(ProfilerCat, "AGTransport/SendAsync");
+        private static readonly TimedProfilerMarker ProfilerWriteMessage = new(ProfilerCat, "AGTransport/WriteMessage");
 
         internal event Action OnStarted;
         internal event Action OnFailure;
@@ -41,10 +44,7 @@ namespace AllianceGamesSdk.Transport.Unity.Netcode
 
         private AllianceGamesClient client = null;
         private AllianceGamesServer server = null;
-        private System.Threading.Channels.Channel<Message> highPriorityReceive = null;
-        private System.Threading.Channels.Channel<Message> lowPriorityReceive = null;
-        private System.Threading.Channels.Channel<(ArraySegment<byte>, ulong)> highPrioritySend = null;
-        private WebSocketLowPriorityQueue lowPrioritySend = null;
+        private System.Threading.Channels.Channel<Message> receiveQueue = null;
         private bool isStarted = false;
         private ILogger logger = null;
         private CancellationTokenSource senderCts = null;
@@ -157,13 +157,9 @@ namespace AllianceGamesSdk.Transport.Unity.Netcode
         {
             try
             {
-                highPriorityReceive = System.Threading.Channels.Channel.CreateUnbounded<Message>();
-                lowPriorityReceive = System.Threading.Channels.Channel.CreateUnbounded<Message>();
-                highPrioritySend = System.Threading.Channels.Channel.CreateUnbounded<(ArraySegment<byte>, ulong)>();
-                lowPrioritySend = new WebSocketLowPriorityQueue(lowQueueMaxSize);
+                receiveQueue = System.Threading.Channels.Channel.CreateUnbounded<Message>();
                 senderCts = new CancellationTokenSource();
 
-                SenderLoop().Forget();
                 if (networkManager.IsClient)
                 {
                     await StartClientInternal();
@@ -217,21 +213,20 @@ namespace AllianceGamesSdk.Transport.Unity.Netcode
                 return;
             }
 
-            client.RegisterMessageHandler(WebSocketProtocolHeader, (buffer) =>
+            client.RegisterMessageHandler(WebSocketProtocolHeader, async (buffer) =>
             {
                 var bytes = buffer.Bytes;
                 if (bytes == null || bytes.Length == 0)
                 {
                     return;
                 }
-                var highPriority = bytes[0] == 1;
                 var message = new Message()
                 {
                     Type = NetworkEvent.Data,
                     ClientId = ServerClientId,
-                    Payload = UnframeWithPriorityByte(buffer.Bytes)
+                    Payload = buffer.Bytes
                 };
-                WriteMessage(message, highPriority);
+                await WriteMessage(message);
             });
 
             var success = await client.Start(default).AsUniTask();
@@ -243,7 +238,7 @@ namespace AllianceGamesSdk.Transport.Unity.Netcode
                     ClientId = 0,
                     Payload = null
                 };
-                WriteMessage(connectMessage, true);
+                await WriteMessage(connectMessage);
                 OnStarted?.Invoke();
             }
             else
@@ -262,7 +257,10 @@ namespace AllianceGamesSdk.Transport.Unity.Netcode
 
             var startupTcs = new UniTaskCompletionSource();
             var connectedClients = new ConcurrentDictionary<Buffer, bool>();
-            server.Clients.ToList().ForEach(client => connectedClients.TryAdd(client, false));
+            foreach (var client in server.Clients)
+            {
+                connectedClients.TryAdd(client, false);
+            }
             server.RegisterMessageHandler(WebSocketProtocolHeader, async (pubKey, buffer) =>
             {
                 var bytes = buffer.Bytes;
@@ -273,17 +271,15 @@ namespace AllianceGamesSdk.Transport.Unity.Netcode
 
                 await startupTcs.Task;
 
-                var sender = (ulong)server.Clients.ToList().IndexOf(pubKey) + 1;
-                var highPriority = bytes[0] == 1;
                 var message = new Message()
                 {
                     Type = NetworkEvent.Data,
-                    ClientId = sender,
-                    Payload = UnframeWithPriorityByte(buffer.Bytes)
+                    ClientId = server.GetClientId(pubKey),
+                    Payload = buffer.Bytes
                 };
-                WriteMessage(message, highPriority);
+                await WriteMessage(message);
             });
-            server.OnClientConnect += (pubKey) =>
+            server.OnClientConnect += async (pubKey) =>
             {
                 var message = new Message()
                 {
@@ -291,7 +287,7 @@ namespace AllianceGamesSdk.Transport.Unity.Netcode
                     ClientId = server.GetClientId(pubKey),
                     Payload = null
                 };
-                WriteMessage(message, true);
+                await WriteMessage(message);
 
                 connectedClients[pubKey] = true;
                 if (connectedClients.Values.All(v => v))
@@ -299,7 +295,7 @@ namespace AllianceGamesSdk.Transport.Unity.Netcode
                     startupTcs.TrySetResult();
                 }
             };
-            server.OnClientDisconnect += (pubKey) =>
+            server.OnClientDisconnect += async (pubKey) =>
             {
                 var message = new Message()
                 {
@@ -307,7 +303,7 @@ namespace AllianceGamesSdk.Transport.Unity.Netcode
                     ClientId = server.GetClientId(pubKey),
                     Payload = null
                 };
-                WriteMessage(message, true);
+                await WriteMessage(message);
             };
 
             server.OnStarted += () => OnStarted?.Invoke();
@@ -337,71 +333,53 @@ namespace AllianceGamesSdk.Transport.Unity.Netcode
 
         public override NetworkEvent PollEvent(out ulong clientId, out ArraySegment<byte> payload, out float receiveTime)
         {
-            try
+            using (ProfilerPollEvent.Auto())
             {
-                if (highPriorityReceive.Reader.TryRead(out var highPriorityMessage))
+                try
                 {
-                    clientId = highPriorityMessage.ClientId;
-                    payload = highPriorityMessage.Payload;
-                    receiveTime = Time.realtimeSinceStartup;
-                    return highPriorityMessage.Type;
+                    if (receiveQueue.Reader.TryRead(out var message))
+                    {
+                        clientId = message.ClientId;
+                        payload = message.Payload;
+                        receiveTime = Time.realtimeSinceStartup;
+                        return message.Type;
+                    }
+                    else
+                    {
+                        clientId = 0;
+                        payload = default;
+                        receiveTime = 0;
+                        return NetworkEvent.Nothing;
+                    }
                 }
-                else if (lowPriorityReceive.Reader.TryRead(out var lowPriorityMessage))
+                catch (Exception e)
                 {
-                    clientId = lowPriorityMessage.ClientId;
-                    payload = lowPriorityMessage.Payload;
-                    receiveTime = Time.realtimeSinceStartup;
-                    return lowPriorityMessage.Type;
-                }
-                else
-                {
+                    LogError(e, "Failed to poll event");
                     clientId = 0;
                     payload = default;
                     receiveTime = 0;
                     return NetworkEvent.Nothing;
                 }
             }
-            catch (Exception e)
-            {
-                LogError(e, "Failed to poll event");
-                clientId = 0;
-                payload = default;
-                receiveTime = 0;
-                return NetworkEvent.Nothing;
-            }
         }
 
         public override void Send(ulong clientId, ArraySegment<byte> payload, NetworkDelivery networkDelivery)
         {
-            try
+            using (ProfilerSend.Auto())
             {
-                if (!isStarted)
+                try
                 {
-                    return;
-                }
+                    if (!isStarted)
+                    {
+                        return;
+                    }
 
-                var highPriority = networkDelivery == NetworkDelivery.Reliable
-                    || networkDelivery == NetworkDelivery.ReliableFragmentedSequenced
-                    || networkDelivery == NetworkDelivery.ReliableSequenced;
-                var framedPayload = FrameWithPriorityByte(payload, highPriority);
-                if (highPriority)
-                {
-                    if (!highPrioritySend.Writer.TryWrite((framedPayload, clientId)))
-                    {
-                        LogError($"Failed to write message to high priority send queue");
-                    }
+                    Send(payload, clientId).Forget();
                 }
-                else
+                catch (Exception e)
                 {
-                    if (!lowPrioritySend.Enqueue(framedPayload, clientId, networkDelivery))
-                    {
-                        LogError($"Failed to write message to low priority send queue");
-                    }
+                    LogError(e, "Failed to send message");
                 }
-            }
-            catch (Exception e)
-            {
-                LogError(e, "Failed to send message");
             }
         }
 
@@ -422,82 +400,36 @@ namespace AllianceGamesSdk.Transport.Unity.Netcode
             senderCts?.Dispose();
             senderCts = null;
 
-            highPrioritySend.Writer.TryComplete();
-            highPriorityReceive.Writer.TryComplete();
-            lowPriorityReceive.Writer.TryComplete();
-
-            highPriorityReceive = null;
-            lowPriorityReceive = null;
-            highPrioritySend = null;
-            lowPrioritySend = null;
+            receiveQueue.Writer.TryComplete();
+            receiveQueue = null;
 
             isStarted = false;
             OnShutdown?.Invoke();
         }
 
-        private async UniTaskVoid SenderLoop()
+        private async UniTaskVoid Send(ArraySegment<byte> payload, ulong clientId)
         {
-            while (!senderCts.IsCancellationRequested)
+            using (ProfilerSendAsync.Auto())
             {
-                var burst = 0;
-                while (burst < highQueueMaxBurst && highPrioritySend.Reader.TryRead(out var high))
+                var buffer = Buffer.From(payload);
+                if (clientId == ServerClientId)
                 {
-                    await Send(high.Item1, high.Item2);
-                    burst++;
+                    await client.Send(WebSocketProtocolHeader, buffer, senderCts.Token).AsUniTask();
                 }
-
-                if (lowPrioritySend.TryDequeue(out var payload, out var clientId) && payload != null && payload.Count > 0)
+                else
                 {
-                    await Send(payload, clientId);
+                    var client = server.GetClientPubKey(clientId);
+                    await server.Send(WebSocketProtocolHeader, client, buffer, senderCts.Token).AsUniTask();
                 }
-
-                var waitHi = highPrioritySend.Reader.WaitToReadAsync(senderCts.Token).AsUniTask();
-                var waitLo = lowPrioritySend.WaitForItemAsync(senderCts.Token);
-                await UniTask.WhenAny(waitHi, waitLo).AttachExternalCancellation(senderCts.Token).AsUniTask();
             }
         }
 
-        private async UniTask Send(ArraySegment<byte> payload, ulong clientId)
+        private async UniTask WriteMessage(Message message)
         {
-            var buffer = Buffer.From(payload);
-            if (clientId == ServerClientId)
+            using (ProfilerWriteMessage.Auto())
             {
-                await client.Send(WebSocketProtocolHeader, buffer, senderCts.Token).AsUniTask();
+                await receiveQueue.Writer.WriteAsync(message);
             }
-            else
-            {
-                var client = server.GetClientPubKey(clientId);
-                await server.Send(WebSocketProtocolHeader, client, buffer, senderCts.Token).AsUniTask();
-            }
-        }
-
-        private void WriteMessage(Message message, bool highPriority)
-        {
-            var queue = highPriority ? highPriorityReceive : lowPriorityReceive;
-            if (!queue.Writer.TryWrite(message))
-            {
-                LogError("Failed to write message to queue");
-            }
-        }
-
-        private ArraySegment<byte> FrameWithPriorityByte(ArraySegment<byte> src, bool high)
-        {
-            var arr = new byte[src.Count + 1];
-            arr[0] = high ? (byte)1 : (byte)0;
-            Array.Copy(src.Array!, src.Offset, arr, 1, src.Count);
-            return new ArraySegment<byte>(arr);
-        }
-
-        private ArraySegment<byte> UnframeWithPriorityByte(ArraySegment<byte> src)
-        {
-            if (src == null || src.Count <= 1)
-            {
-                return default;
-            }
-
-            var arr = new byte[src.Count - 1];
-            Array.Copy(src.Array!, src.Offset + 1, arr, 0, src.Count - 1);
-            return new ArraySegment<byte>(arr);
         }
 
         private void LogError(string message)

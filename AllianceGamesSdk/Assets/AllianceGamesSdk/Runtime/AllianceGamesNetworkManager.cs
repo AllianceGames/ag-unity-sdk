@@ -91,5 +91,10 @@ namespace AllianceGamesSdk.Unity.Netcode
             base.StartServer();
             return await initCs.Task;
         }
+
+        void OnApplicationQuit()
+        {
+            TimedProfilerMarker.PrintAllSummaries();
+        }
     }
 }

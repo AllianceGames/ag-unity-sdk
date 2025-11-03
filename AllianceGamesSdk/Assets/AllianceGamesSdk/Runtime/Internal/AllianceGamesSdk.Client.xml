@@ -95,7 +95,7 @@
             <remarks>Unverified requests are signed but do not get verified by the network.</remarks>
             <exception cref="T:System.InvalidOperationException">Thrown when the client is not connected.</exception>
         </member>
-        <member name="M:AllianceGamesSdk.Client.AllianceGamesClient.RegisterMessageHandler(System.UInt32,System.Action{Chromia.Buffer})">
+        <member name="M:AllianceGamesSdk.Client.AllianceGamesClient.RegisterMessageHandler(System.UInt32,System.Func{Chromia.Buffer,System.Threading.Tasks.Task})">
             <summary>
             Registers a handler for incoming messages of a specific type.
             </summary>

@@ -7,6 +7,7 @@ namespace AllianceGamesSdk.Transport.Unity
     internal interface IWebSocket
     {
         WebSocketState ReadyState { get; }
+        ulong WaitTime { get; }
 
         event Action<byte[]> OnMessage;
         event Action<CloseStatusCode, string> OnClose;
@@ -19,6 +20,7 @@ namespace AllianceGamesSdk.Transport.Unity
     internal class WebSocketSharpWrapper : IWebSocket
     {
         public WebSocketState ReadyState => webSocket.ReadyState;
+        public ulong WaitTime => (ulong)webSocket.WaitTime.Milliseconds;
 
         public event Action<byte[]> OnMessage;
         public event Action<CloseStatusCode, string> OnClose;

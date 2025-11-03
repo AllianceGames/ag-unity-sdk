@@ -6,12 +6,18 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
+using Unity.Profiling;
 using WebSocketSharp;
 
 namespace AllianceGamesSdk.Transport.Unity
 {
     internal class WebSocketConnection : ITransportConnection
     {
+        // Profiler markers for automatic timing tracking
+        private static readonly ProfilerCategory ProfilerCat = ProfilerCategory.Network;
+        private static readonly TimedProfilerMarker ProfilerSend = new(ProfilerCat, "WebSocketConnection/Send");
+        private static readonly TimedProfilerMarker ProfilerDisconnect = new(ProfilerCat, "WebSocketConnection/Disconnect");
+
         private IWebSocket webSocket;
         private readonly ILogger logger;
         private readonly System.Threading.Channels.Channel<byte[]> messageChannel
@@ -34,21 +40,24 @@ namespace AllianceGamesSdk.Transport.Unity
 
         public Task Send(byte[] message, CancellationToken ct)
         {
-            if (webSocket == null || webSocket.ReadyState != WebSocketState.Open)
+            using (ProfilerSend.Auto())
             {
-                logger?.Error($"Cannot send on closed socket.");
+                if (webSocket == null || webSocket.ReadyState != WebSocketState.Open)
+                {
+                    logger?.Error($"Cannot send on closed socket.");
+                    return Task.CompletedTask;
+                }
+
+                try
+                {
+                    webSocket.Send(message);
+                }
+                catch (Exception e)
+                {
+                    logger?.Error(e, $"Error while running send task for WebSocket.");
+                }
                 return Task.CompletedTask;
             }
-
-            try
-            {
-                webSocket.Send(message);
-            }
-            catch (Exception e)
-            {
-                logger?.Error(e, $"Error while running send task for WebSocket.");
-            }
-            return Task.CompletedTask;
         }
 
         public async IAsyncEnumerable<byte[]> Receive([EnumeratorCancellation] CancellationToken ct)
@@ -95,34 +104,37 @@ namespace AllianceGamesSdk.Transport.Unity
 
         public async Task Disconnect(CancellationToken ct)
         {
-            if (webSocket == null)
+            using (ProfilerDisconnect.Auto())
             {
-                return;
-            }
+                if (webSocket == null)
+                {
+                    return;
+                }
 
-            try
-            {
                 try
                 {
-                    if (webSocket.ReadyState == WebSocketState.Closed)
+                    try
                     {
-                        return;
-                    }
+                        if (webSocket.ReadyState == WebSocketState.Closed)
+                        {
+                            return;
+                        }
 
-                    await webSocket.CloseAsync();
+                        await webSocket.CloseAsync();
+                    }
+                    catch (OperationCanceledException)
+                    { }
+                    finally
+                    {
+                        webSocket = null;
+                    }
                 }
-                catch (OperationCanceledException)
+                catch (ObjectDisposedException)
                 { }
-                finally
+                catch (Exception e)
                 {
-                    webSocket = null;
+                    logger?.Error(e, $"Error while disconnecting from WebSocket.");
                 }
-            }
-            catch (ObjectDisposedException)
-            { }
-            catch (Exception e)
-            {
-                logger?.Error(e, $"Error while disconnecting from WebSocket.");
             }
         }
 

@@ -1,5 +1,6 @@
 using AllianceGamesSdk.Server;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using Buffer = Chromia.Buffer;
 
@@ -7,14 +8,12 @@ namespace AllianceGamesSdk.Unity.Netcode
 {
     public static class AllianceGamesServerExtension
     {
+        private static Dictionary<ulong, Buffer> cachedClientPubKeys;
+        private static Dictionary<Buffer, ulong> cachedClientIds;
         public static ulong GetClientId(this AllianceGamesServer server, Buffer pubKey)
         {
-            var id = server.Clients.ToList().IndexOf(pubKey);
-            if (id == -1)
-            {
-                throw new ArgumentOutOfRangeException($"Client with public key {pubKey.Parse()} not found");
-            }
-            return (ulong)id + 1;
+            EnsureClientCache(server);
+            return cachedClientIds[pubKey];
         }
 
         public static ulong GetClientId(this AllianceGamesNetworkManager networkManager, Buffer pubKey)
@@ -24,12 +23,29 @@ namespace AllianceGamesSdk.Unity.Netcode
 
         public static Buffer GetClientPubKey(this AllianceGamesServer server, ulong clientId)
         {
-            return server.Clients.ToList()[(int)clientId - 1];
+            EnsureClientCache(server);
+            return cachedClientPubKeys[clientId];
         }
 
         public static Buffer GetClientPubKey(this AllianceGamesNetworkManager networkManager, ulong clientId)
         {
             return networkManager.transport.Server.GetClientPubKey(clientId);
+        }
+
+        private static void EnsureClientCache(AllianceGamesServer server)
+        {
+            if (cachedClientPubKeys == null)
+            {
+                cachedClientPubKeys = new();
+                cachedClientIds = new();
+                var i = 1ul;
+                foreach (var pubkey in server.Clients)
+                {
+                    cachedClientPubKeys.Add(i, pubkey);
+                    cachedClientIds.Add(pubkey, i);
+                    i++;
+                }
+            }
         }
     }
 }
