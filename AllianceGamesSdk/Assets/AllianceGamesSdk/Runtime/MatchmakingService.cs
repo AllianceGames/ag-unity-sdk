@@ -1,6 +1,5 @@
 using AllianceGamesSdk.Matchmaking.Models;
 using Chromia;
-using Chromia.Encoding;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -23,7 +22,6 @@ namespace AllianceGamesSdk.Matchmaking
         public static void EnsureAotTypes()
         {
             AotHelper.EnsureType<GetMatchmakingTicketStatusResult>();
-            AotHelper.EnsureType<TransactionReceipt>();
         }
 #endif
 
@@ -45,38 +43,23 @@ namespace AllianceGamesSdk.Matchmaking
 
     public interface IMatchmakingService
     {
-        Task<TransactionReceipt> CreateMatchmakingTicket(
-            CreateMatchmakingTicketRequest request,
+        Task<CreateTicketResponse> CreateTicket(
+            CreateTicketRequest request,
             CancellationToken ct
         );
 
-        Task<string> GetMatchmakingTicket(
-            GetMatchmakingTicketRequest request,
+        Task<GetTicketStatusResult> GetTicketStatus(
+            GetTicketStatusRequest request,
             CancellationToken ct
         );
 
-        Task<GetMatchmakingTicketStatusResult> GetMatchmakingTicketStatus(
-            GetMatchmakingTicketStatusRequest request,
+        Task<GetMatchResponse> GetMatch(
+            GetMatchRequest request,
             CancellationToken ct
         );
 
-        Task<GetConnectionDetailsResponse> GetConnectionDetails(
-            GetConnectionDetailsRequest request,
-            CancellationToken ct
-        );
-
-        Task<int> GetAmountTicketsInQueue(
-            GetAmountTicketsInQueueRequest request,
-            CancellationToken ct
-        );
-
-        Task<TransactionReceipt> CancelMatchmakingTicket(
-            CancelMatchmakingTicketRequest request,
-            CancellationToken ct
-        );
-
-        Task<TransactionReceipt> CancelAllMatchmakingTicketsForPlayer(
-            CancelAllMatchmakingTicketRequests request,
+        Task<TransactionReceipt> CancelTicket(
+            CancelTicketRequest request,
             CancellationToken ct
         );
     }
@@ -101,8 +84,8 @@ namespace AllianceGamesSdk.Matchmaking
             this.chromiaClient = chromiaClient;
         }
 
-        public async Task<TransactionReceipt> CreateMatchmakingTicket(
-            CreateMatchmakingTicketRequest request,
+        public async Task<TransactionReceipt> CreateTicket(
+            CreateTicketRequest request,
             CancellationToken ct
         )
         {
@@ -132,12 +115,12 @@ namespace AllianceGamesSdk.Matchmaking
             );
         }
 
-        public async Task<GetMatchmakingTicketStatusResult> GetMatchmakingTicketStatus(
-            GetMatchmakingTicketStatusRequest request,
+        public async Task<GetTicketStatusResult> GetTicketStatus(
+            GetTicketStatusRequest request,
             CancellationToken ct
         )
         {
-            return await chromiaClient.Query<GetMatchmakingTicketStatusResult>(
+            return await chromiaClient.Query<GetTicketStatusResult>(
                 "ag.IMatchmaking.get_ticket_status",
                 ct,
                 ("par", new object[] { request.TicketId })
@@ -156,8 +139,8 @@ namespace AllianceGamesSdk.Matchmaking
             );
         }
 
-        public async Task<TransactionReceipt> CancelMatchmakingTicket(
-            CancelMatchmakingTicketRequest request,
+        public async Task<TransactionReceipt> CancelTicket(
+            CancelTicketRequest request,
             CancellationToken ct
         )
         {
@@ -190,129 +173,104 @@ namespace AllianceGamesSdk.Matchmaking
 
     namespace Models
     {
-        [PostchainSerializable]
-        public class CreateMatchmakingTicketRequest
+        public class CreateTicketRequest
         {
-            [PostchainProperty("identifier", 0)]
+            [JsonProperty("identifier")]
             public Buffer Identifier;
-            [PostchainProperty("network_signer", 1)]
+            [JsonProperty("network_signer")]
             public Buffer NetworkSigner;
-            [PostchainProperty("duid", 2)]
+            [JsonProperty("duid")]
             public string Duid;
-            [PostchainProperty("queue_name", 3)]
+            [JsonProperty("queue_name")]
             public string QueueName;
-            [PostchainProperty("match_data", 4)]
+            [JsonProperty("match_data")]
             public string MatchData = "[]";
-            [PostchainProperty("attributes", 5)]
+            [JsonProperty("attributes")]
             public Dictionary<string, object> Attributes = new Dictionary<string, object>();
 
             [JsonConstructor]
-            public CreateMatchmakingTicketRequest() { }
+            public CreateTicketRequest() { }
         }
 
-        [PostchainSerializable]
-        public class GetMatchmakingTicketRequest
+        public class CreateTicketResponse
         {
-            [PostchainProperty("identifier", 0)]
+            [JsonProperty("identifier")]
             public Buffer Identifier;
-            [PostchainProperty("duid", 1)]
+            [JsonProperty("network_signer")]
+            public Buffer NetworkSigner;
+            [JsonProperty("duid")]
             public string Duid;
-            [PostchainProperty("queue_name", 2)]
+            [JsonProperty("queue_name")]
             public string QueueName;
+            [JsonProperty("match_data")]
+            public string MatchData = "[]";
+            [JsonProperty("attributes")]
+            public Dictionary<string, object> Attributes = new Dictionary<string, object>();
 
             [JsonConstructor]
-            public GetMatchmakingTicketRequest() { }
+            public CreateTicketResponse() { }
         }
 
-        [PostchainSerializable]
-        public class GetAmountTicketsInQueueRequest
+        public class GetTicketStatusRequest
         {
-            [PostchainProperty("duid", 0)]
-            public string Duid;
-            [PostchainProperty("queue_name", 1)]
-            public string QueueName;
-
-            [JsonConstructor]
-            public GetAmountTicketsInQueueRequest() { }
-        }
-
-        [PostchainSerializable]
-        public class GetMatchmakingTicketStatusRequest
-        {
-            [PostchainProperty("ticket_id", 0)]
+            [JsonProperty("ticket_id")]
             public string TicketId;
 
             [JsonConstructor]
-            public GetMatchmakingTicketStatusRequest() { }
+            public GetTicketStatusRequest() { }
         }
 
-        [PostchainSerializable]
-        public class GetMatchmakingTicketStatusResult
+        public class GetTicketStatusResult
         {
-            [PostchainProperty("ticket_id", 0)]
+            [JsonProperty("ticket_id")]
             public string TicketId;
-            [PostchainProperty("queue_name", 1)]
+            [JsonProperty("queue_name")]
             public string QueueName;
-            [PostchainProperty("created_at", 2)]
+            [JsonProperty("created_at")]
             public long CreatedAtTimestamp;
             public DateTime CreatedAt => DateTimeOffset.FromUnixTimeMilliseconds(CreatedAtTimestamp).DateTime;
-            [PostchainProperty("status", 3)]
+            [JsonProperty("status")]
             public MatchmakingTicketState Status;
-            [PostchainProperty("give_up_after_seconds", 4)]
+            [JsonProperty("give_up_after_seconds")]
             public int GiveUpAfterSeconds;
-            [PostchainProperty("identifier", 5)]
+            [JsonProperty("identifier")]
             public Buffer Identifier;
-            [PostchainProperty("session_id", 6)]
+            [JsonProperty("session_id")]
             public string SessionId;
 
             [JsonConstructor]
-            public GetMatchmakingTicketStatusResult() { }
+            public GetTicketStatusResult() { }
         }
 
-        [PostchainSerializable]
-        public class GetConnectionDetailsRequest
+        public class GetMatchResponse
         {
-            [PostchainProperty("session_id", 0)]
-            public string SessionId;
-
-            [JsonConstructor]
-            public GetConnectionDetailsRequest() { }
+            [JsonProperty("match_id")]
+            public string MatchId;
         }
 
-        [PostchainSerializable]
-        public class GetConnectionDetailsResponse
+        public class GetMatchRequest
         {
-            [PostchainProperty("url", 0)]
-            public string CoordinatorUrl;
-            [PostchainProperty("address", 1)]
-            public Buffer CoordinatorPubkey;
-
-            [JsonConstructor]
-            public GetConnectionDetailsResponse() { }
+            [JsonProperty("match_id")]
+            public string MatchId;
         }
 
-        [PostchainSerializable]
-        public class CancelMatchmakingTicketRequest
+        public class CancelTicketRequest
         {
-            [PostchainProperty("identifier", 0)]
+            [JsonProperty("identifier")]
             public Buffer Identifier;
-            [PostchainProperty("ticket_id", 1)]
+            [JsonProperty("ticket_id")]
             public string TicketId;
 
             [JsonConstructor]
-            public CancelMatchmakingTicketRequest() { }
+            public CancelTicketRequest() { }
         }
 
-        [PostchainSerializable]
-        public class CancelAllMatchmakingTicketRequests
+        public class CancelTicketResponse
         {
-            [PostchainProperty("identifier", 0)]
+            [JsonProperty("identifier")]
             public Buffer Identifier;
-            [PostchainProperty("duid", 1)]
-            public string Duid;
-
-            [JsonConstructor]
-            public CancelAllMatchmakingTicketRequests() { }
+            [JsonProperty("ticket_id")]
+            public string TicketId;
         }
 
         public enum TicketStatus
