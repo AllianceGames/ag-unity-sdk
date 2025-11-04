@@ -106,6 +106,48 @@
             When using Unity, this type can be processed to generate the appropriate [Preserve] attributes.
             </summary>
         </member>
+        <member name="T:AllianceGamesSdk.Common.Profiler.TimingReporter">
+            <summary>
+            A reporter for timing events.
+            </summary>
+        </member>
+        <member name="M:AllianceGamesSdk.Common.Profiler.TimingReporter.#ctor(System.String,Serilog.ILogger)">
+            <summary>
+            Creates a new timing reporter.
+            </summary>
+            <param name="name">The name of the timing reporter.</param>
+            <param name="logger">The logger to use for logging the summary.</param>
+        </member>
+        <member name="T:AllianceGamesSdk.Common.Profiler.TimingReporter.Scope">
+            <summary>
+            A disposable scope for timing an operation.
+            </summary>
+        </member>
+        <member name="M:AllianceGamesSdk.Common.Profiler.TimingReporter.Scope.#ctor(AllianceGamesSdk.Common.Profiler.TimingReporter)">
+            <summary>
+            Creates a new scope for timing an operation.
+            </summary>
+        </member>
+        <member name="M:AllianceGamesSdk.Common.Profiler.TimingReporter.Scope.Dispose">
+            <summary>
+            Disposes the scope and updates the timing reporter.
+            </summary>
+        </member>
+        <member name="M:AllianceGamesSdk.Common.Profiler.TimingReporter.Auto">
+            <summary> 
+            Creates an AutoScope to time an operation.
+            </summary>
+        </member>
+        <member name="M:AllianceGamesSdk.Common.Profiler.TimingReporter.PrintSummary">
+            <summary>
+            Prints the summary of the timing reporter.
+            </summary>
+        </member>
+        <member name="M:AllianceGamesSdk.Common.Profiler.TimingReporter.PrintAllSummaries">
+            <summary>
+            Prints the summaries of all timing reporters.
+            </summary>
+        </member>
         <member name="T:AllianceGamesSdk.Common.SessionData`2">
             <summary>
             Represents structured session data with game and player-specific information.

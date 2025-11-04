@@ -1,5 +1,6 @@
 using AllianceGamesSdk.Client;
 using AllianceGamesSdk.Common.Transport;
+using AllianceGamesSdk.Common.Profiler;
 using AllianceGamesSdk.Server;
 using AllianceGamesSdk.Unity;
 using AllianceGamesSdk.Unity.Netcode;
@@ -10,7 +11,6 @@ using System.Collections.Concurrent;
 using System.Linq;
 using System.Threading;
 using Unity.Netcode;
-using Unity.Profiling;
 using UnityEngine;
 using Buffer = Chromia.Buffer;
 using ILogger = Serilog.ILogger;
@@ -27,11 +27,10 @@ namespace AllianceGamesSdk.Transport.Unity.Netcode
         }
 
         // Profiler markers for automatic timing tracking
-        private static readonly ProfilerCategory ProfilerCat = ProfilerCategory.Network;
-        private static readonly TimedProfilerMarker ProfilerPollEvent = new(ProfilerCat, "AGTransport/PollEvent");
-        private static readonly TimedProfilerMarker ProfilerSend = new(ProfilerCat, "AGTransport/Send");
-        private static readonly TimedProfilerMarker ProfilerSendAsync = new(ProfilerCat, "AGTransport/SendAsync");
-        private static readonly TimedProfilerMarker ProfilerWriteMessage = new(ProfilerCat, "AGTransport/WriteMessage");
+        private static readonly TimingReporter ProfilerPollEvent = new("AGTransport/PollEvent");
+        private static readonly TimingReporter ProfilerSend = new("AGTransport/Send");
+        private static readonly TimingReporter ProfilerSendAsync = new("AGTransport/SendAsync");
+        private static readonly TimingReporter ProfilerWriteMessage = new("AGTransport/WriteMessage");
 
         internal event Action OnStarted;
         internal event Action OnFailure;

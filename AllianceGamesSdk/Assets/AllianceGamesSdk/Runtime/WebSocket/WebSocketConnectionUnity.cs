@@ -1,3 +1,4 @@
+using AllianceGamesSdk.Common.Profiler;
 using AllianceGamesSdk.Common.Transport;
 using Cysharp.Threading.Tasks;
 using Serilog;
@@ -6,7 +7,6 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
-using Unity.Profiling;
 using WebSocketSharp;
 
 namespace AllianceGamesSdk.Transport.Unity
@@ -14,9 +14,8 @@ namespace AllianceGamesSdk.Transport.Unity
     internal class WebSocketConnection : ITransportConnection
     {
         // Profiler markers for automatic timing tracking
-        private static readonly ProfilerCategory ProfilerCat = ProfilerCategory.Network;
-        private static readonly TimedProfilerMarker ProfilerSend = new(ProfilerCat, "WebSocketConnection/Send");
-        private static readonly TimedProfilerMarker ProfilerDisconnect = new(ProfilerCat, "WebSocketConnection/Disconnect");
+        private static readonly TimingReporter ProfilerSend = new("WebSocketConnection/Send");
+        private static readonly TimingReporter ProfilerDisconnect = new("WebSocketConnection/Disconnect");
 
         private IWebSocket webSocket;
         private readonly ILogger logger;

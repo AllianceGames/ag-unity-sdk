@@ -1,5 +1,6 @@
 using AllianceGamesSdk.Client;
 using AllianceGamesSdk.Server;
+using AllianceGamesSdk.Common.Profiler;
 using AllianceGamesSdk.Transport.Unity.Netcode;
 using Chromia;
 using Cysharp.Threading.Tasks;
@@ -94,7 +95,7 @@ namespace AllianceGamesSdk.Unity.Netcode
 
         void OnApplicationQuit()
         {
-            TimedProfilerMarker.PrintAllSummaries();
+            TimingReporter.PrintAllSummaries();
         }
     }
 }

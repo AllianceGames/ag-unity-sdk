@@ -1,8 +1,8 @@
 using System.Collections;
 using UnityEngine;
 using Unity.Netcode;
-using Unity.Profiling;
 using Cysharp.Threading.Tasks;
+using AllianceGamesSdk.Common.Profiler;
 using System;
 using Serilog;
 
@@ -24,11 +24,10 @@ public class NgoPingPongProfiler : NetworkBehaviour
     public bool autoStartOnClient = true;
 
     // Profiler markers
-    private static readonly ProfilerCategory Cat = ProfilerCategory.Scripts;
-    private static readonly TimedProfilerMarker MarkSendClient = new(Cat, "NGO/PingPong/Send(Client)");
-    private static readonly TimedProfilerMarker MarkRecvServer = new(Cat, "NGO/PingPong/Recv(Server)");
-    private static readonly TimedProfilerMarker MarkSendServer = new(Cat, "NGO/PingPong/Send(ServerEcho)");
-    private static readonly TimedProfilerMarker MarkRecvClient = new(Cat, "NGO/PingPong/Recv(ClientEcho)");
+    private static readonly TimingReporter MarkSendClient = new("NGO/PingPong/Send(Client)");
+    private static readonly TimingReporter MarkRecvServer = new("NGO/PingPong/Recv(Server)");
+    private static readonly TimingReporter MarkSendServer = new("NGO/PingPong/Send(ServerEcho)");
+    private static readonly TimingReporter MarkRecvClient = new("NGO/PingPong/Recv(ClientEcho)");
 
     // Simple running stats
     private int _sentCount;
