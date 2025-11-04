@@ -18,8 +18,8 @@ namespace AllianceGamesSdk.Transport.Unity
     internal class WebSocketTransport : ITransport
     {
         // Profiler markers for automatic timing tracking
-        private static readonly TimingReporter ProfilerConnect = new("Unity/WebSocketTransport/Connect");
-        private static readonly TimingReporter ProfilerListen = new("Unity/WebSocketTransport/Listen");
+        // private static readonly TimingReporter ProfilerConnect = new("Unity/WebSocketTransport/Connect");
+        // private static readonly TimingReporter ProfilerListen = new("Unity/WebSocketTransport/Listen");
 
         private readonly ILogger logger;
         private readonly ITaskRunner taskRunner = new UniTaskRunner();
@@ -33,7 +33,7 @@ namespace AllianceGamesSdk.Transport.Unity
 
         public async Task<ITransportConnection> Connect(Uri uri, CancellationToken ct)
         {
-            using (ProfilerConnect.Auto())
+            // using (ProfilerConnect.Auto())
             {
                 logger.Information("[Unity] WebSocketTransport: Connecting to {Uri}", uri);
                 var builder = new UriBuilder(uri);
@@ -85,7 +85,7 @@ namespace AllianceGamesSdk.Transport.Unity
             [EnumeratorCancellation] CancellationToken ct
         )
         {
-            using (ProfilerListen.Auto())
+            // using (ProfilerListen.Auto())
             {
                 var server = new WebSocketServer(port);
                 server.AllowForwardedRequest = true;

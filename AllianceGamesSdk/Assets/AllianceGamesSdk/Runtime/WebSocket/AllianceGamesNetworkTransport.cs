@@ -27,10 +27,10 @@ namespace AllianceGamesSdk.Transport.Unity.Netcode
         }
 
         // Profiler markers for automatic timing tracking
-        private static readonly TimingReporter ProfilerPollEvent = new("Unity/AllianceGamesNetworkTransport/PollEvent");
-        private static readonly TimingReporter ProfilerSend = new("Unity/AllianceGamesNetworkTransport/Send");
-        private static readonly TimingReporter ProfilerSendAsync = new("Unity/AllianceGamesNetworkTransport/SendAsync");
-        private static readonly TimingReporter ProfilerWriteMessage = new("Unity/AllianceGamesNetworkTransport/WriteMessage");
+        // private static readonly TimingReporter ProfilerPollEvent = new("Unity/AllianceGamesNetworkTransport/PollEvent");
+        // private static readonly TimingReporter ProfilerSend = new("Unity/AllianceGamesNetworkTransport/Send");
+        // private static readonly TimingReporter ProfilerSendAsync = new("Unity/AllianceGamesNetworkTransport/SendAsync");
+        // private static readonly TimingReporter ProfilerWriteMessage = new("Unity/AllianceGamesNetworkTransport/WriteMessage");
 
         internal event Action OnStarted;
         internal event Action OnFailure;
@@ -333,7 +333,7 @@ namespace AllianceGamesSdk.Transport.Unity.Netcode
 
         public override NetworkEvent PollEvent(out ulong clientId, out ArraySegment<byte> payload, out float receiveTime)
         {
-            using (ProfilerPollEvent.Auto())
+            // using (ProfilerPollEvent.Auto())
             {
                 try
                 {
@@ -365,7 +365,7 @@ namespace AllianceGamesSdk.Transport.Unity.Netcode
 
         public override void Send(ulong clientId, ArraySegment<byte> payload, NetworkDelivery networkDelivery)
         {
-            using (ProfilerSend.Auto())
+            // using (ProfilerSend.Auto())
             {
                 try
                 {
@@ -409,7 +409,7 @@ namespace AllianceGamesSdk.Transport.Unity.Netcode
 
         private async UniTaskVoid Send(ArraySegment<byte> payload, ulong clientId)
         {
-            using (ProfilerSendAsync.Auto())
+            // using (ProfilerSendAsync.Auto())
             {
                 var buffer = Buffer.From(payload);
                 if (clientId == ServerClientId)
@@ -426,7 +426,7 @@ namespace AllianceGamesSdk.Transport.Unity.Netcode
 
         private void WriteMessage(Message message)
         {
-            using (ProfilerWriteMessage.Auto())
+            // using (ProfilerWriteMessage.Auto())
             {
                 if (!receiveQueue.Writer.TryWrite(message))
                 {
