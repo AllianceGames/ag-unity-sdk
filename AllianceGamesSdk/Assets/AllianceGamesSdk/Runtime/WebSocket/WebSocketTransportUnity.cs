@@ -18,8 +18,8 @@ namespace AllianceGamesSdk.Transport.Unity
     internal class WebSocketTransport : ITransport
     {
         // Profiler markers for automatic timing tracking
-        private static readonly TimingReporter ProfilerConnect = new("WebSocketTransport/Connect");
-        private static readonly TimingReporter ProfilerListen = new("WebSocketTransport/Listen");
+        private static readonly TimingReporter ProfilerConnect = new("Unity/WebSocketTransport/Connect");
+        private static readonly TimingReporter ProfilerListen = new("Unity/WebSocketTransport/Listen");
 
         private readonly ILogger logger;
         private readonly ITaskRunner taskRunner = new UniTaskRunner();

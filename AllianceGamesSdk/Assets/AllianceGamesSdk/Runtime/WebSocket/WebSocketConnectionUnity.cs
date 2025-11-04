@@ -14,8 +14,8 @@ namespace AllianceGamesSdk.Transport.Unity
     internal class WebSocketConnection : ITransportConnection
     {
         // Profiler markers for automatic timing tracking
-        private static readonly TimingReporter ProfilerSend = new("WebSocketConnection/Send");
-        private static readonly TimingReporter ProfilerDisconnect = new("WebSocketConnection/Disconnect");
+        private static readonly TimingReporter ProfilerSend = new("Unity/WebSocketConnection/Send");
+        private static readonly TimingReporter ProfilerDisconnect = new("Unity/WebSocketConnection/Disconnect");
 
         private IWebSocket webSocket;
         private readonly ILogger logger;

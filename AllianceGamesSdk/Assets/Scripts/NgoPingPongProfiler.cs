@@ -24,10 +24,10 @@ public class NgoPingPongProfiler : NetworkBehaviour
     public bool autoStartOnClient = true;
 
     // Profiler markers
-    private static readonly TimingReporter MarkSendClient = new("NGO/PingPong/Send(Client)");
-    private static readonly TimingReporter MarkRecvServer = new("NGO/PingPong/Recv(Server)");
-    private static readonly TimingReporter MarkSendServer = new("NGO/PingPong/Send(ServerEcho)");
-    private static readonly TimingReporter MarkRecvClient = new("NGO/PingPong/Recv(ClientEcho)");
+    private static readonly TimingReporter MarkSendClient = new("Unity/NgoPingPongProfiler/Send(Client)");
+    private static readonly TimingReporter MarkRecvServer = new("Unity/NgoPingPongProfiler/Recv(Server)");
+    private static readonly TimingReporter MarkSendServer = new("Unity/NgoPingPongProfiler/Send(ServerEcho)");
+    private static readonly TimingReporter MarkRecvClient = new("Unity/NgoPingPongProfiler/Recv(ClientEcho)");
 
     // Simple running stats
     private int _sentCount;

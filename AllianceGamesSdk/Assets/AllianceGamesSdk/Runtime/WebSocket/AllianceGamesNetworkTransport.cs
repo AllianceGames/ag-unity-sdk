@@ -27,10 +27,10 @@ namespace AllianceGamesSdk.Transport.Unity.Netcode
         }
 
         // Profiler markers for automatic timing tracking
-        private static readonly TimingReporter ProfilerPollEvent = new("AGTransport/PollEvent");
-        private static readonly TimingReporter ProfilerSend = new("AGTransport/Send");
-        private static readonly TimingReporter ProfilerSendAsync = new("AGTransport/SendAsync");
-        private static readonly TimingReporter ProfilerWriteMessage = new("AGTransport/WriteMessage");
+        private static readonly TimingReporter ProfilerPollEvent = new("Unity/AllianceGamesNetworkTransport/PollEvent");
+        private static readonly TimingReporter ProfilerSend = new("Unity/AllianceGamesNetworkTransport/Send");
+        private static readonly TimingReporter ProfilerSendAsync = new("Unity/AllianceGamesNetworkTransport/SendAsync");
+        private static readonly TimingReporter ProfilerWriteMessage = new("Unity/AllianceGamesNetworkTransport/WriteMessage");
 
         internal event Action OnStarted;
         internal event Action OnFailure;
@@ -212,12 +212,12 @@ namespace AllianceGamesSdk.Transport.Unity.Netcode
                 return;
             }
 
-            client.RegisterMessageHandler(WebSocketProtocolHeader, async (buffer) =>
+            client.RegisterMessageHandler(WebSocketProtocolHeader, (buffer) =>
             {
                 var bytes = buffer.Bytes;
                 if (bytes == null || bytes.Length == 0)
                 {
-                    return;
+                    return UniTask.CompletedTask.AsTask();
                 }
                 var message = new Message()
                 {
@@ -225,7 +225,8 @@ namespace AllianceGamesSdk.Transport.Unity.Netcode
                     ClientId = ServerClientId,
                     Payload = buffer.Bytes
                 };
-                await WriteMessage(message);
+                WriteMessage(message);
+                return UniTask.CompletedTask.AsTask();
             });
 
             var success = await client.Start(default).AsUniTask();
@@ -237,7 +238,7 @@ namespace AllianceGamesSdk.Transport.Unity.Netcode
                     ClientId = 0,
                     Payload = null
                 };
-                await WriteMessage(connectMessage);
+                WriteMessage(connectMessage);
                 OnStarted?.Invoke();
             }
             else
@@ -276,9 +277,9 @@ namespace AllianceGamesSdk.Transport.Unity.Netcode
                     ClientId = server.GetClientId(pubKey),
                     Payload = buffer.Bytes
                 };
-                await WriteMessage(message);
+                WriteMessage(message);
             });
-            server.OnClientConnect += async (pubKey) =>
+            server.OnClientConnect += (pubKey) =>
             {
                 var message = new Message()
                 {
@@ -286,7 +287,7 @@ namespace AllianceGamesSdk.Transport.Unity.Netcode
                     ClientId = server.GetClientId(pubKey),
                     Payload = null
                 };
-                await WriteMessage(message);
+                WriteMessage(message);
 
                 connectedClients[pubKey] = true;
                 if (connectedClients.Values.All(v => v))
@@ -294,7 +295,7 @@ namespace AllianceGamesSdk.Transport.Unity.Netcode
                     startupTcs.TrySetResult();
                 }
             };
-            server.OnClientDisconnect += async (pubKey) =>
+            server.OnClientDisconnect += (pubKey) =>
             {
                 var message = new Message()
                 {
@@ -302,7 +303,7 @@ namespace AllianceGamesSdk.Transport.Unity.Netcode
                     ClientId = server.GetClientId(pubKey),
                     Payload = null
                 };
-                await WriteMessage(message);
+                WriteMessage(message);
             };
 
             server.OnStarted += () => OnStarted?.Invoke();
@@ -423,11 +424,14 @@ namespace AllianceGamesSdk.Transport.Unity.Netcode
             }
         }
 
-        private async UniTask WriteMessage(Message message)
+        private void WriteMessage(Message message)
         {
             using (ProfilerWriteMessage.Auto())
             {
-                await receiveQueue.Writer.WriteAsync(message);
+                if (!receiveQueue.Writer.TryWrite(message))
+                {
+                    LogError("Failed to write message to receive queue");
+                }
             }
         }
 
