@@ -19,14 +19,14 @@ namespace AllianceGamesSdk.Transport.Unity
 
         private IWebSocket webSocket;
         private readonly ILogger logger;
-        private readonly System.Threading.Channels.Channel<byte[]> messageChannel
-            = System.Threading.Channels.Channel.CreateUnbounded<byte[]>();
+
+        public event Action<byte[]> OnMessage;
 
         internal WebSocketConnection(IWebSocket webSocket, ILogger logger)
         {
             this.webSocket = webSocket;
             this.logger = logger;
-            webSocket.OnMessage += data => messageChannel.Writer.TryWrite(data);
+            webSocket.OnMessage += data => OnMessage?.Invoke(data);
             webSocket.OnClose += (code, reason) =>
             {
                 logger?.Information("[Unity] WebSocketConnection: Closed with code {Code} and reason {Reason}", code, reason);
@@ -56,48 +56,6 @@ namespace AllianceGamesSdk.Transport.Unity
                     logger?.Error(e, $"Error while running send task for WebSocket.");
                 }
                 return Task.CompletedTask;
-            }
-        }
-
-        public async IAsyncEnumerable<byte[]> Receive([EnumeratorCancellation] CancellationToken ct)
-        {
-            while (webSocket != null && webSocket.ReadyState != WebSocketState.Closed)
-            {
-                byte[] message = null;
-                try
-                {
-                    message = await messageChannel.Reader.ReadAsync(ct).AsUniTask();
-                }
-                catch (OperationCanceledException)
-                {
-                    await Disconnect(default);
-                }
-                catch (Exception e)
-                {
-                    logger?.Error(e, $"Error while receiving message on WebSocket.");
-                }
-
-                if (message == null)
-                {
-                    yield return null;
-                    break;
-                }
-
-                yield return message;
-            }
-
-            if (webSocket != null)
-            {
-                try
-                {
-                    if (webSocket.ReadyState != WebSocketState.Closed)
-                    {
-                        await webSocket.CloseAsync();
-                    }
-                    webSocket = null;
-                }
-                catch (ObjectDisposedException)
-                { }
             }
         }
 

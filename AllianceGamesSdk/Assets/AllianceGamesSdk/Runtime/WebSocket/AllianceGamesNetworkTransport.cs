@@ -217,7 +217,7 @@ namespace AllianceGamesSdk.Transport.Unity.Netcode
                 var bytes = buffer.Bytes;
                 if (bytes == null || bytes.Length == 0)
                 {
-                    return UniTask.CompletedTask.AsTask();
+                    return;
                 }
                 var message = new Message()
                 {
@@ -226,7 +226,6 @@ namespace AllianceGamesSdk.Transport.Unity.Netcode
                     Payload = buffer.Bytes
                 };
                 WriteMessage(message);
-                return UniTask.CompletedTask.AsTask();
             });
 
             var success = await client.Start(default).AsUniTask();

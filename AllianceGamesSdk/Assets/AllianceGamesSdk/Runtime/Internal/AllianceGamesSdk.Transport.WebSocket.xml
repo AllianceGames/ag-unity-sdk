@@ -10,6 +10,9 @@
             Provides message sending and receiving capabilities over a WebSocket connection.
             </summary>
         </member>
+        <member name="E:AllianceGamesSdk.Transport.WebSocket.WebSocketConnection.OnMessage">
+            <inheritdoc />
+        </member>
         <member name="M:AllianceGamesSdk.Transport.WebSocket.WebSocketConnection.#ctor(System.Net.WebSockets.WebSocket,Serilog.ILogger)">
             <summary>
             Initializes a new instance of the WebSocket connection.
@@ -20,8 +23,20 @@
         <member name="M:AllianceGamesSdk.Transport.WebSocket.WebSocketConnection.Send(System.Byte[],System.Threading.CancellationToken)">
             <inheritdoc />
         </member>
-        <member name="M:AllianceGamesSdk.Transport.WebSocket.WebSocketConnection.Receive(System.Threading.CancellationToken)">
-            <inheritdoc />
+        <member name="M:AllianceGamesSdk.Transport.WebSocket.WebSocketConnection.StartReceiveLoop">
+            <summary>
+            Starts the background receive loop that raises OnMessage events.
+            </summary>
+        </member>
+        <member name="M:AllianceGamesSdk.Transport.WebSocket.WebSocketConnection.ReceiveLoop(System.Threading.CancellationToken)">
+            <summary>
+            Background receive loop that processes incoming messages and raises OnMessage events.
+            </summary>
+        </member>
+        <member name="M:AllianceGamesSdk.Transport.WebSocket.WebSocketConnection.CleanupWebSocket">
+            <summary>
+            Cleans up WebSocket resources.
+            </summary>
         </member>
         <member name="M:AllianceGamesSdk.Transport.WebSocket.WebSocketConnection.Disconnect(System.Threading.CancellationToken)">
             <inheritdoc />

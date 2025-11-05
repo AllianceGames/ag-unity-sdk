@@ -132,7 +132,7 @@
             <param name="payload">Message content.</param>
             <param name="ct">Cancellation token to cancel the send operation.</param>
         </member>
-        <member name="M:AllianceGamesSdk.Server.AllianceGamesServer.RegisterMessageHandler(System.UInt32,System.Func{Chromia.Buffer,Chromia.Buffer,System.Threading.Tasks.Task})">
+        <member name="M:AllianceGamesSdk.Server.AllianceGamesServer.RegisterMessageHandler(System.UInt32,System.Action{Chromia.Buffer,Chromia.Buffer})">
             <summary>
             Registers a handler for incoming messages of a specific type.
             </summary>

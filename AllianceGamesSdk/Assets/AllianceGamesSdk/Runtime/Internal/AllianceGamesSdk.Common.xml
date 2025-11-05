@@ -371,6 +371,11 @@
             Provides methods for sending and receiving raw byte messages.
             </summary>
         </member>
+        <member name="E:AllianceGamesSdk.Common.Transport.ITransportConnection.OnMessage">
+            <summary>
+            Event raised when a message is received from the connection.
+            </summary>
+        </member>
         <member name="M:AllianceGamesSdk.Common.Transport.ITransportConnection.Send(System.Byte[],System.Threading.CancellationToken)">
             <summary>
             Sends a raw byte message through the connection.
@@ -378,15 +383,6 @@
             <param name="message">The byte array containing the message to send.</param>
             <param name="ct">Cancellation token to cancel the send operation.</param>
             <returns>A task that completes when the message has been sent.</returns>
-            <exception cref="T:System.OperationCanceledException">Thrown when the operation is canceled.</exception>
-            <exception cref="T:System.InvalidOperationException">Thrown when the connection is closed or in an invalid state.</exception>
-        </member>
-        <member name="M:AllianceGamesSdk.Common.Transport.ITransportConnection.Receive(System.Threading.CancellationToken)">
-            <summary>
-            Receives messages from the connection as an asynchronous stream.
-            </summary>
-            <param name="ct">Cancellation token to stop receiving messages.</param>
-            <returns>An async enumerable of received messages as byte arrays. Null indicates a connection close.</returns>
             <exception cref="T:System.OperationCanceledException">Thrown when the operation is canceled.</exception>
             <exception cref="T:System.InvalidOperationException">Thrown when the connection is closed or in an invalid state.</exception>
         </member>
