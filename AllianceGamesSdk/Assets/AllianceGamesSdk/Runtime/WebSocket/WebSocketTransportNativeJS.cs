@@ -118,6 +118,7 @@ namespace AllianceGamesSdk.Transport.Unity
                 return wrappers.TryRemove(url, out _);
             }
 
+#if UNITY_WEBGL && !UNITY_EDITOR
             [DllImport("__Internal")]
             internal static extern void Connect(
                 string url,
@@ -126,7 +127,6 @@ namespace AllianceGamesSdk.Transport.Unity
                 OnErrorCallback onErrorCallback,
                 OnCloseCallback onCloseCallback
             );
-#if UNITY_WEBGL && !UNITY_EDITOR
             [DllImport("__Internal")]
             internal static extern WebSocketState GetState(string url);
             [DllImport("__Internal")]
@@ -134,6 +134,13 @@ namespace AllianceGamesSdk.Transport.Unity
             [DllImport("__Internal")]
             internal static extern void Close(string url, CloseStatusCode code = CloseStatusCode.Normal, string reason = null);
 #else
+            internal static void Connect(
+                string url,
+                OnOpenCallback onOpenCallback,
+                OnMessageCallback onMessageCallback,
+                OnErrorCallback onErrorCallback,
+                OnCloseCallback onCloseCallback
+            ) => UnityEngine.Debug.Log("WebGL only");
             internal static WebSocketState GetState(string url) => WebSocketState.Closed;
             internal static void Send(string url, byte[] data, int offset, int count) => UnityEngine.Debug.Log("WebGL only");
             internal static void Close(string url, CloseStatusCode code = CloseStatusCode.Normal, string reason = null)
