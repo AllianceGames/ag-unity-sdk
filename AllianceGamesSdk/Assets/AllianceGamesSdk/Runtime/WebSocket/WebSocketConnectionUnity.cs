@@ -26,7 +26,18 @@ namespace AllianceGamesSdk.Transport.Unity
         {
             this.webSocket = webSocket;
             this.logger = logger;
-            webSocket.OnMessage += data => OnMessage?.Invoke(data);
+            webSocket.OnMessage += data =>
+            {
+                if (OnMessage != null)
+                {
+
+                    OnMessage?.Invoke(data);
+                }
+                else
+                {
+                    logger.Warning($"No listener on WebSocketConnection.OnMessage");
+                }
+            };
             webSocket.OnClose += (code, reason) =>
             {
                 logger?.Information("[Unity] WebSocketConnection: Closed with code {Code} and reason {Reason}", code, reason);
