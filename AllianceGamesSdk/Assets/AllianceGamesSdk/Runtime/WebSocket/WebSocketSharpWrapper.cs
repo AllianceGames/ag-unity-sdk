@@ -32,7 +32,11 @@ namespace AllianceGamesSdk.Transport.Unity
         public WebSocketSharpWrapper(WebSocketSharp.WebSocket webSocket)
         {
             this.webSocket = webSocket;
-            webSocket.OnMessage += (sender, e) => OnMessage?.Invoke(e.RawData);
+            webSocket.OnMessage += (sender, e) =>
+            {
+                UnityEngine.Debug.Log("Received message on websocket");
+                OnMessage?.Invoke(e.RawData);
+            };
             webSocket.OnClose += (sender, e) =>
             {
                 closeTcs.TrySetResult();
