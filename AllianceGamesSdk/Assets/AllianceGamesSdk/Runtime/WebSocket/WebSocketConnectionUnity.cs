@@ -1,10 +1,10 @@
+using AllianceGamesSdk.Common;
 using AllianceGamesSdk.Common.Transport;
 using Serilog;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
 using WebSocketSharp;
-using System.Collections.Concurrent;
 
 namespace AllianceGamesSdk.Transport.Unity
 {
@@ -16,41 +16,14 @@ namespace AllianceGamesSdk.Transport.Unity
 
         private IWebSocket webSocket;
         private readonly ILogger logger;
-        private Action<byte[]> onMessage;
 
-        public event Action<byte[]> OnMessage
-        {
-            add
-            {
-                onMessage += value;
-                while (bufferedMessages.TryPop(out byte[] message))
-                {
-                    onMessage?.Invoke(message);
-                }
-            }
-            remove
-            {
-                onMessage -= value;
-            }
-        }
-
-        private ConcurrentStack<byte[]> bufferedMessages = new();
+        public BufferedAction<byte[]> OnMessage { get; } = new BufferedAction<byte[]>();
 
         internal WebSocketConnection(IWebSocket webSocket, ILogger logger)
         {
             this.webSocket = webSocket;
             this.logger = logger;
-            webSocket.OnMessage += data =>
-            {
-                if (onMessage != null)
-                {
-                    onMessage.Invoke(data);
-                }
-                else
-                {
-                    bufferedMessages.Push(data);
-                }
-            };
+            webSocket.OnMessage += data => OnMessage.Invoke(data);
             webSocket.OnClose += (code, reason) =>
             {
                 logger?.Information("[Unity] WebSocketConnection: Closed with code {Code} and reason {Reason}", code, reason);

@@ -10,7 +10,7 @@
             Provides message sending and receiving capabilities over a WebSocket connection.
             </summary>
         </member>
-        <member name="E:AllianceGamesSdk.Transport.WebSocket.WebSocketConnection.OnMessage">
+        <member name="P:AllianceGamesSdk.Transport.WebSocket.WebSocketConnection.OnMessage">
             <inheritdoc />
         </member>
         <member name="M:AllianceGamesSdk.Transport.WebSocket.WebSocketConnection.#ctor(System.Net.WebSockets.WebSocket,Serilog.ILogger)">

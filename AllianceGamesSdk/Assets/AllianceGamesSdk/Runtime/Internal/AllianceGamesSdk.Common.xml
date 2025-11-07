@@ -4,6 +4,68 @@
         <name>AllianceGamesSdk.Common</name>
     </assembly>
     <members>
+        <member name="T:AllianceGamesSdk.Common.BufferedAction`1">
+            <summary>
+            A generic event handler that buffers messages until the first listener is added,
+            then invokes all buffered messages when a listener is registered.
+            </summary>
+            <typeparam name="T">The type of data to buffer and invoke</typeparam>
+        </member>
+        <member name="E:AllianceGamesSdk.Common.BufferedAction`1.OnEvent">
+            <summary>
+            Event that buffers messages when no listeners are registered,
+            and invokes all buffered messages when the first listener is added.
+            </summary>
+        </member>
+        <member name="M:AllianceGamesSdk.Common.BufferedAction`1.Invoke(`0)">
+            <summary>
+            Invokes the event with the given data. If no handlers are registered,
+            the data is buffered and will be invoked when the first handler is added.
+            </summary>
+            <param name="data">The data to invoke or buffer</param>
+        </member>
+        <member name="P:AllianceGamesSdk.Common.BufferedAction`1.BufferedCount">
+            <summary>
+            Gets the number of buffered messages waiting for a handler.
+            </summary>
+        </member>
+        <member name="M:AllianceGamesSdk.Common.BufferedAction`1.ClearBuffered">
+            <summary>
+            Clears all buffered messages without invoking them.
+            </summary>
+        </member>
+        <member name="T:AllianceGamesSdk.Common.BufferedAction`2">
+            <summary>
+            A generic event handler that buffers messages until the first listener is added,
+            then invokes all buffered messages when a listener is registered.
+            </summary>
+            <typeparam name="T1">The type of data to buffer and invoke</typeparam>
+            <typeparam name="T2">The type of data to buffer and invoke</typeparam>
+        </member>
+        <member name="E:AllianceGamesSdk.Common.BufferedAction`2.OnEvent">
+            <summary>
+            Event that buffers messages when no listeners are registered,
+            and invokes all buffered messages when the first listener is added.
+            </summary>
+        </member>
+        <member name="M:AllianceGamesSdk.Common.BufferedAction`2.Invoke(`0,`1)">
+            <summary>
+            Invokes the event with the given data. If no handlers are registered,
+            the data is buffered and will be invoked when the first handler is added.
+            </summary>
+            <param name="data1">The data to invoke or buffer</param>
+            <param name="data2">The data to invoke or buffer</param>
+        </member>
+        <member name="P:AllianceGamesSdk.Common.BufferedAction`2.BufferedCount">
+            <summary>
+            Gets the number of buffered messages waiting for a handler.
+            </summary>
+        </member>
+        <member name="M:AllianceGamesSdk.Common.BufferedAction`2.ClearBuffered">
+            <summary>
+            Clears all buffered messages without invoking them.
+            </summary>
+        </member>
         <member name="T:AllianceGamesSdk.Common.IConfig">
             <summary>
             Defines the configuration interface for Alliance Games SDK components.
@@ -371,7 +433,7 @@
             Provides methods for sending and receiving raw byte messages.
             </summary>
         </member>
-        <member name="E:AllianceGamesSdk.Common.Transport.ITransportConnection.OnMessage">
+        <member name="P:AllianceGamesSdk.Common.Transport.ITransportConnection.OnMessage">
             <summary>
             Event raised when a message is received from the connection.
             </summary>
