@@ -1,13 +1,10 @@
-using AllianceGamesSdk.Common.Profiler;
 using AllianceGamesSdk.Common.Transport;
-using Cysharp.Threading.Tasks;
 using Serilog;
 using System;
-using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using WebSocketSharp;
+using System.Collections.Concurrent;
 
 namespace AllianceGamesSdk.Transport.Unity
 {
@@ -19,8 +16,25 @@ namespace AllianceGamesSdk.Transport.Unity
 
         private IWebSocket webSocket;
         private readonly ILogger logger;
+        private Action<byte[]> onMessage;
 
-        public event Action<byte[]> OnMessage;
+        public event Action<byte[]> OnMessage
+        {
+            add
+            {
+                onMessage += value;
+                while (bufferedMessages.TryPop(out byte[] message))
+                {
+                    onMessage?.Invoke(message);
+                }
+            }
+            remove
+            {
+                onMessage -= value;
+            }
+        }
+
+        private ConcurrentStack<byte[]> bufferedMessages = new();
 
         internal WebSocketConnection(IWebSocket webSocket, ILogger logger)
         {
@@ -28,14 +42,13 @@ namespace AllianceGamesSdk.Transport.Unity
             this.logger = logger;
             webSocket.OnMessage += data =>
             {
-                if (OnMessage != null)
+                if (onMessage != null)
                 {
-
-                    OnMessage?.Invoke(data);
+                    onMessage.Invoke(data);
                 }
                 else
                 {
-                    logger.Warning($"No listener on WebSocketConnection.OnMessage");
+                    bufferedMessages.Push(data);
                 }
             };
             webSocket.OnClose += (code, reason) =>
