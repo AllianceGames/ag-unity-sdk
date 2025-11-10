@@ -16,6 +16,7 @@ namespace AllianceGamesSdk.Transport.Unity
 
         private IWebSocket webSocket;
         private readonly ILogger logger;
+        private readonly SynchronizationContext synchronizationContext;
 
         public BufferedAction<byte[]> OnMessage { get; } = new BufferedAction<byte[]>();
 
@@ -23,7 +24,14 @@ namespace AllianceGamesSdk.Transport.Unity
         {
             this.webSocket = webSocket;
             this.logger = logger;
-            webSocket.OnMessage += data => OnMessage.Invoke(data);
+
+            // Capture the synchronization context (should be Unity's main thread context)
+            synchronizationContext = SynchronizationContext.Current ?? new SynchronizationContext();
+
+            webSocket.OnMessage += data =>
+            {
+                synchronizationContext.Post(_ => OnMessage.Invoke(data), null);
+            };
             webSocket.OnClose += (code, reason) =>
             {
                 logger.Information("[Unity] WebSocketConnection: Closed with code {Code} and reason {Reason}", code, reason);
