@@ -49,6 +49,7 @@ class Server : MonoBehaviour
             return;
         }
 
+        server.OnClientConnect += address => logger.Information($"Client with pubkey {address.Parse()} connected.");
         server.OnClientDisconnect += _ => disconnectTcs.TrySetResult();
 
 

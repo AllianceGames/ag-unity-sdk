@@ -26,11 +26,11 @@ namespace AllianceGamesSdk.Transport.Unity
             webSocket.OnMessage += data => OnMessage.Invoke(data);
             webSocket.OnClose += (code, reason) =>
             {
-                logger?.Information("[Unity] WebSocketConnection: Closed with code {Code} and reason {Reason}", code, reason);
+                logger.Information("[Unity] WebSocketConnection: Closed with code {Code} and reason {Reason}", code, reason);
             };
             webSocket.OnError += (message) =>
             {
-                logger?.Error("[Unity] WebSocketConnection: Error {Message}", message);
+                logger.Error("[Unity] WebSocketConnection: Error {Message}", message);
             };
         }
 
@@ -40,7 +40,7 @@ namespace AllianceGamesSdk.Transport.Unity
             {
                 if (webSocket == null || webSocket.ReadyState != WebSocketState.Open)
                 {
-                    logger?.Error($"Cannot send on closed socket.");
+                    logger.Error($"Cannot send on closed socket.");
                     return Task.CompletedTask;
                 }
 
@@ -50,7 +50,7 @@ namespace AllianceGamesSdk.Transport.Unity
                 }
                 catch (Exception e)
                 {
-                    logger?.Error(e, $"Error while running send task for WebSocket.");
+                    logger.Error(e, $"Error while running send task for WebSocket.");
                 }
                 return Task.CompletedTask;
             }
@@ -87,7 +87,7 @@ namespace AllianceGamesSdk.Transport.Unity
                 { }
                 catch (Exception e)
                 {
-                    logger?.Error(e, $"Error while disconnecting from WebSocket.");
+                    logger.Error(e, $"Error while disconnecting from WebSocket.");
                 }
             }
         }

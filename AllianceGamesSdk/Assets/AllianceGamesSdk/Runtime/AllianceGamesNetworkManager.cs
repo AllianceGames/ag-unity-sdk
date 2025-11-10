@@ -74,11 +74,10 @@ namespace AllianceGamesSdk.Unity.Netcode
         }
 
         public async UniTask<AllianceGamesServer> CreateServer(
-            INodeConfig nodeConfig = null,
-            ILogger logger = null
+            INodeConfig nodeConfig = null
         )
         {
-            return await transport.CreateServer(nodeConfig, logger);
+            return await transport.CreateServer(nodeConfig);
         }
 
         public async UniTask<bool> StartServer(Func<UniTask<string>> entrypoint)

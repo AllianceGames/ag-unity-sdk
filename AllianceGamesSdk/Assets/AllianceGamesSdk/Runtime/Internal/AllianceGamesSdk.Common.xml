@@ -11,6 +11,12 @@
             </summary>
             <typeparam name="T">The type of data to buffer and invoke</typeparam>
         </member>
+        <member name="P:AllianceGamesSdk.Common.BufferedAction`1.ActiveListeners">
+            <summary>
+            Event that buffers messages when no listeners are registered,
+            and invokes all buffered messages when the first listener is added.
+            </summary>
+        </member>
         <member name="E:AllianceGamesSdk.Common.BufferedAction`1.OnEvent">
             <summary>
             Event that buffers messages when no listeners are registered,
