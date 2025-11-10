@@ -14,6 +14,7 @@ using Unity.Netcode;
 using UnityEngine;
 using Buffer = Chromia.Buffer;
 using ILogger = Serilog.ILogger;
+using Serilog;
 
 namespace AllianceGamesSdk.Transport.Unity.Netcode
 {
@@ -132,7 +133,7 @@ namespace AllianceGamesSdk.Transport.Unity.Netcode
             INodeConfig nodeConfig
         )
         {
-            logger = nodeConfig.Logger;
+            logger = nodeConfig?.Logger ?? Log.Logger;
             transport = WebSocketTransportFactory.Get(logger);
 
             if (nodeConfig is LocalTestNodeConfig)
