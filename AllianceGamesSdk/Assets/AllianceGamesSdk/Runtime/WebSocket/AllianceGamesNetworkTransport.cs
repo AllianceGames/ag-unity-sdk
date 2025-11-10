@@ -130,11 +130,12 @@ namespace AllianceGamesSdk.Transport.Unity.Netcode
         }
 
         internal async UniTask<AllianceGamesServer> CreateServer(
-            INodeConfig nodeConfig
+            INodeConfig nodeConfig,
+            ILogger logger
         )
         {
-            logger = nodeConfig?.Logger ?? Log.Logger;
-            transport = WebSocketTransportFactory.Get(logger);
+            this.logger = logger ?? nodeConfig?.Logger ?? Log.Logger;
+            transport = WebSocketTransportFactory.Get(this.logger);
 
             if (nodeConfig is LocalTestNodeConfig)
             {
