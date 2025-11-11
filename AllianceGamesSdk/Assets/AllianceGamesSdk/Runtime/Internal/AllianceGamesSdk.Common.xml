@@ -444,6 +444,11 @@
             Event raised when a message is received from the connection.
             </summary>
         </member>
+        <member name="E:AllianceGamesSdk.Common.Transport.ITransportConnection.OnDisconnect">
+            <summary>
+            Event raised when the connection is closed.
+            </summary>
+        </member>
         <member name="M:AllianceGamesSdk.Common.Transport.ITransportConnection.Send(System.Byte[],System.Threading.CancellationToken)">
             <summary>
             Sends a raw byte message through the connection.

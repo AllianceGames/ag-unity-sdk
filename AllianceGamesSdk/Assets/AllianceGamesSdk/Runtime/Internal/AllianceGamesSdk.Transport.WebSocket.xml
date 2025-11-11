@@ -13,6 +13,9 @@
         <member name="P:AllianceGamesSdk.Transport.WebSocket.WebSocketConnection.OnMessage">
             <inheritdoc />
         </member>
+        <member name="E:AllianceGamesSdk.Transport.WebSocket.WebSocketConnection.OnDisconnect">
+            <inheritdoc />
+        </member>
         <member name="M:AllianceGamesSdk.Transport.WebSocket.WebSocketConnection.#ctor(System.Net.WebSockets.WebSocket,Serilog.ILogger)">
             <summary>
             Initializes a new instance of the WebSocket connection.

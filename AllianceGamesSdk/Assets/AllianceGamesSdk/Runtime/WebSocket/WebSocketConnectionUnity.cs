@@ -19,6 +19,7 @@ namespace AllianceGamesSdk.Transport.Unity
         private readonly ILogger logger;
 
         public BufferedAction<byte[]> OnMessage { get; } = new BufferedAction<byte[]>();
+        public event Action OnDisconnect;
 
         internal WebSocketConnection(IWebSocket webSocket, ILogger logger)
         {
@@ -30,6 +31,7 @@ namespace AllianceGamesSdk.Transport.Unity
             webSocket.OnClose += (code, reason) =>
             {
                 logger.Information("[Unity] WebSocketConnection: Closed with code {Code} and reason {Reason}", code, reason);
+                OnDisconnect?.Invoke();
             };
             webSocket.OnError += (message) =>
             {
