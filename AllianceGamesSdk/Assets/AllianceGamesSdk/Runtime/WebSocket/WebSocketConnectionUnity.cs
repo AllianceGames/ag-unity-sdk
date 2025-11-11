@@ -1,5 +1,6 @@
 using AllianceGamesSdk.Common;
 using AllianceGamesSdk.Common.Transport;
+using Cysharp.Threading.Tasks;
 using Serilog;
 using System;
 using System.Threading;
@@ -16,7 +17,6 @@ namespace AllianceGamesSdk.Transport.Unity
 
         private IWebSocket webSocket;
         private readonly ILogger logger;
-        private readonly SynchronizationContext synchronizationContext;
 
         public BufferedAction<byte[]> OnMessage { get; } = new BufferedAction<byte[]>();
 
@@ -25,13 +25,8 @@ namespace AllianceGamesSdk.Transport.Unity
             this.webSocket = webSocket;
             this.logger = logger;
 
-            // Capture the synchronization context (should be Unity's main thread context)
-            synchronizationContext = SynchronizationContext.Current ?? new SynchronizationContext();
 
-            webSocket.OnMessage += data =>
-            {
-                synchronizationContext.Post(_ => OnMessage.Invoke(data), null);
-            };
+            webSocket.OnMessage += data => OnMessage.Invoke(data);
             webSocket.OnClose += (code, reason) =>
             {
                 logger.Information("[Unity] WebSocketConnection: Closed with code {Code} and reason {Reason}", code, reason);
