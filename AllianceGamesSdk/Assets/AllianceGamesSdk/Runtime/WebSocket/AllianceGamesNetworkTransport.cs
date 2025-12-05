@@ -392,7 +392,6 @@ namespace AllianceGamesSdk.Transport.Unity.Netcode
             }
             else if (server != null)
             {
-                AllianceGamesServerExtension.InvalidateCache();
                 serverCts?.Cancel();
                 server = null;
             }
