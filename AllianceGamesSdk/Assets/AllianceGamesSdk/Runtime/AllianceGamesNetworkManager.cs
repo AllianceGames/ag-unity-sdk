@@ -95,7 +95,6 @@ namespace AllianceGamesSdk.Unity.Netcode
 
         void OnApplicationQuit()
         {
-            AllianceGamesServerExtension.InvalidateCache();
             TimingReporter.PrintAllSummaries();
         }
     }

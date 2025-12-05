@@ -1,18 +1,21 @@
 using AllianceGamesSdk.Server;
 using Serilog;
-using System.Collections.Generic;
+using System.Linq;
 using Buffer = Chromia.Buffer;
 
 namespace AllianceGamesSdk.Unity.Netcode
 {
     public static class AllianceGamesServerExtension
     {
-        private static Dictionary<ulong, Buffer> cachedClientPubKeys;
-        private static Dictionary<Buffer, ulong> cachedClientIds;
         public static ulong GetClientId(this AllianceGamesServer server, Buffer pubKey)
         {
-            EnsureClientCache(server);
-            return cachedClientIds[pubKey];
+            var clients = server.Clients.ToList();
+            var index = clients.IndexOf(pubKey);
+            if (index == -1)
+            {
+                throw new System.ArgumentException($"Client with pubKey {pubKey} not found");
+            }
+            return (ulong)(index + 1);
         }
 
         public static ulong GetClientId(this AllianceGamesNetworkManager networkManager, Buffer pubKey)
@@ -22,35 +25,17 @@ namespace AllianceGamesSdk.Unity.Netcode
 
         public static Buffer GetClientPubKey(this AllianceGamesServer server, ulong clientId)
         {
-            EnsureClientCache(server);
-            return cachedClientPubKeys[clientId];
+            var clients = server.Clients.ToList();
+            if (clientId == 0 || clientId > (ulong)clients.Count)
+            {
+                throw new System.ArgumentException($"Invalid clientId: {clientId}");
+            }
+            return clients[(int)(clientId - 1)];
         }
 
         public static Buffer GetClientPubKey(this AllianceGamesNetworkManager networkManager, ulong clientId)
         {
             return networkManager.transport.Server.GetClientPubKey(clientId);
-        }
-
-        private static void EnsureClientCache(AllianceGamesServer server)
-        {
-            if (cachedClientPubKeys == null)
-            {
-                cachedClientPubKeys = new();
-                cachedClientIds = new();
-                var i = 1ul;
-                foreach (var pubkey in server.Clients)
-                {
-                    cachedClientPubKeys.Add(i, pubkey);
-                    cachedClientIds.Add(pubkey, i);
-                    i++;
-                }
-            }
-        }
-
-        internal static void InvalidateCache()
-        {
-            cachedClientPubKeys = null;
-            cachedClientIds = null;
         }
     }
 }
