@@ -281,13 +281,13 @@ namespace AllianceGamesSdk.Transport.Unity.Netcode
             });
             server.OnClientConnect += (pubKey) =>
             {
-                var message = new Message()
-                {
-                    Type = NetworkEvent.Connect,
-                    ClientId = server.GetClientId(pubKey),
-                    Payload = null
-                };
-                WriteMessage(message);
+                // var message = new Message()
+                // {
+                //     Type = NetworkEvent.Connect,
+                //     ClientId = server.GetClientId(pubKey),
+                //     Payload = null
+                // };
+                // WriteMessage(message);
 
                 connectedClients[pubKey] = true;
                 if (connectedClients.Values.All(v => v))
