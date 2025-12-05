@@ -46,5 +46,11 @@ namespace AllianceGamesSdk.Unity.Netcode
                 }
             }
         }
+
+        internal static void InvalidateCache()
+        {
+            cachedClientPubKeys = null;
+            cachedClientIds = null;
+        }
     }
 }
