@@ -281,7 +281,6 @@ namespace AllianceGamesSdk.Transport.Unity.Netcode
             });
             server.OnClientConnect += (pubKey) =>
             {
-                Log.Logger.Information($"Sending NetworkEvent.Connect for client with pubkey {pubKey.Parse()}");
                 var message = new Message()
                 {
                     Type = NetworkEvent.Connect,
@@ -343,6 +342,7 @@ namespace AllianceGamesSdk.Transport.Unity.Netcode
                         clientId = message.ClientId;
                         payload = message.Payload;
                         receiveTime = Time.realtimeSinceStartup;
+                        Log.Logger.Information($"Polled event {message.Type} for client with id {clientId} and pubkey {server.GetClientPubKey(clientId).Parse()}");
                         return message.Type;
                     }
                     else
