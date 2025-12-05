@@ -1,7 +1,6 @@
 using AllianceGamesSdk.Server;
-using System;
+using Serilog;
 using System.Collections.Generic;
-using System.Linq;
 using Buffer = Chromia.Buffer;
 
 namespace AllianceGamesSdk.Unity.Netcode
@@ -10,10 +9,10 @@ namespace AllianceGamesSdk.Unity.Netcode
     {
         private static Dictionary<ulong, Buffer> cachedClientPubKeys;
         private static Dictionary<Buffer, ulong> cachedClientIds;
-        private static object clientCacheLock = new object();
         public static ulong GetClientId(this AllianceGamesServer server, Buffer pubKey)
         {
             EnsureClientCache(server);
+            Log.Logger.Information($"Getting client id for pubkey {pubKey.Parse()}, cached client ids: {string.Join(", ", cachedClientIds.Keys)}");
             return cachedClientIds[pubKey];
         }
 
@@ -35,19 +34,16 @@ namespace AllianceGamesSdk.Unity.Netcode
 
         private static void EnsureClientCache(AllianceGamesServer server)
         {
-            lock (clientCacheLock)
+            if (cachedClientPubKeys == null)
             {
-                if (cachedClientPubKeys == null)
+                cachedClientPubKeys = new();
+                cachedClientIds = new();
+                var i = 1ul;
+                foreach (var pubkey in server.Clients)
                 {
-                    cachedClientPubKeys = new();
-                    cachedClientIds = new();
-                    var i = 1ul;
-                    foreach (var pubkey in server.Clients)
-                    {
-                        cachedClientPubKeys.Add(i, pubkey);
-                        cachedClientIds.Add(pubkey, i);
-                        i++;
-                    }
+                    cachedClientPubKeys.Add(i, pubkey);
+                    cachedClientIds.Add(pubkey, i);
+                    i++;
                 }
             }
         }
