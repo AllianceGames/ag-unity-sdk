@@ -281,6 +281,7 @@ namespace AllianceGamesSdk.Transport.Unity.Netcode
             });
             server.OnClientConnect += (pubKey) =>
             {
+                Log.Logger.Information($"Sending NetworkEvent.Connect for client with pubkey {pubKey.Parse()}");
                 var message = new Message()
                 {
                     Type = NetworkEvent.Connect,
