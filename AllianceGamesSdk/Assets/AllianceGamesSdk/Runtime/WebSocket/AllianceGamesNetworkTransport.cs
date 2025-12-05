@@ -429,6 +429,7 @@ namespace AllianceGamesSdk.Transport.Unity.Netcode
         {
             // using (ProfilerWriteMessage.Auto())
             {
+                Log.Logger.Information($"Writing message {message.Type} for client with id {message.ClientId} and pubkey {server.GetClientPubKey(message.ClientId).Parse()}");
                 if (!receiveQueue.Writer.TryWrite(message))
                 {
                     LogError("Failed to write message to receive queue");
