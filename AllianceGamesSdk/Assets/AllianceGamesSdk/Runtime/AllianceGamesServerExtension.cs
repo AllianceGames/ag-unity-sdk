@@ -12,7 +12,6 @@ namespace AllianceGamesSdk.Unity.Netcode
         public static ulong GetClientId(this AllianceGamesServer server, Buffer pubKey)
         {
             EnsureClientCache(server);
-            Log.Logger.Information($"Getting client id for pubkey {pubKey.Parse()}, cached client ids: {string.Join(", ", cachedClientIds.Keys)}");
             return cachedClientIds[pubKey];
         }
 

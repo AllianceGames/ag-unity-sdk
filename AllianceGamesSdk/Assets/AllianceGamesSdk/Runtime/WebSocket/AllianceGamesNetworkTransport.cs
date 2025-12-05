@@ -281,13 +281,13 @@ namespace AllianceGamesSdk.Transport.Unity.Netcode
             });
             server.OnClientConnect += (pubKey) =>
             {
-                // var message = new Message()
-                // {
-                //     Type = NetworkEvent.Connect,
-                //     ClientId = server.GetClientId(pubKey),
-                //     Payload = null
-                // };
-                // WriteMessage(message);
+                var message = new Message()
+                {
+                    Type = NetworkEvent.Connect,
+                    ClientId = server.GetClientId(pubKey),
+                    Payload = null
+                };
+                WriteMessage(message);
 
                 connectedClients[pubKey] = true;
                 if (connectedClients.Values.All(v => v))
@@ -342,10 +342,6 @@ namespace AllianceGamesSdk.Transport.Unity.Netcode
                         clientId = message.ClientId;
                         payload = message.Payload;
                         receiveTime = Time.realtimeSinceStartup;
-                        if (message.Type == NetworkEvent.Connect)
-                        {
-                            Log.Logger.Information($"Polled event {message.Type} for client with id {clientId}");
-                        }
                         return message.Type;
                     }
                     else
@@ -432,10 +428,6 @@ namespace AllianceGamesSdk.Transport.Unity.Netcode
         {
             // using (ProfilerWriteMessage.Auto())
             {
-                if (message.Type == NetworkEvent.Connect)
-                {
-                    Log.Logger.Information($"Writing message {message.Type} for client with id {message.ClientId}");
-                }
                 if (!receiveQueue.Writer.TryWrite(message))
                 {
                     LogError("Failed to write message to receive queue");
