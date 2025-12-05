@@ -10,6 +10,7 @@ namespace AllianceGamesSdk.Unity.Netcode
     {
         private static Dictionary<ulong, Buffer> cachedClientPubKeys;
         private static Dictionary<Buffer, ulong> cachedClientIds;
+        private static object clientCacheLock = new object();
         public static ulong GetClientId(this AllianceGamesServer server, Buffer pubKey)
         {
             EnsureClientCache(server);
@@ -34,16 +35,19 @@ namespace AllianceGamesSdk.Unity.Netcode
 
         private static void EnsureClientCache(AllianceGamesServer server)
         {
-            if (cachedClientPubKeys == null)
+            lock (clientCacheLock)
             {
-                cachedClientPubKeys = new();
-                cachedClientIds = new();
-                var i = 1ul;
-                foreach (var pubkey in server.Clients)
+                if (cachedClientPubKeys == null)
                 {
-                    cachedClientPubKeys.Add(i, pubkey);
-                    cachedClientIds.Add(pubkey, i);
-                    i++;
+                    cachedClientPubKeys = new();
+                    cachedClientIds = new();
+                    var i = 1ul;
+                    foreach (var pubkey in server.Clients)
+                    {
+                        cachedClientPubKeys.Add(i, pubkey);
+                        cachedClientIds.Add(pubkey, i);
+                        i++;
+                    }
                 }
             }
         }
