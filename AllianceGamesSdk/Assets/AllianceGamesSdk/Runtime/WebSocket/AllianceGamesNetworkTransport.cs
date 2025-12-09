@@ -287,6 +287,7 @@ namespace AllianceGamesSdk.Transport.Unity.Netcode
                     ClientId = server.GetClientId(pubKey),
                     Payload = null
                 };
+                logger.Information("[Unity] AllianceGamesNetworkTransport: server.OnClientConnect {ClientId} and pubkey {PubKey}", message.ClientId, pubKey.Parse());
                 WriteMessage(message);
 
                 connectedClients[pubKey] = true;
@@ -339,6 +340,10 @@ namespace AllianceGamesSdk.Transport.Unity.Netcode
                 {
                     if (receiveQueue.Reader.TryRead(out var message))
                     {
+                        if (message.Type == NetworkEvent.Connect)
+                        {
+                            logger.Information("[Unity] AllianceGamesNetworkTransport: PollEvent {ClientId}", message.ClientId);
+                        }
                         clientId = message.ClientId;
                         payload = message.Payload;
                         receiveTime = Time.realtimeSinceStartup;
