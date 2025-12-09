@@ -293,7 +293,7 @@ namespace AllianceGamesSdk.Transport.Unity.Netcode
                     message.ClientId,
                     string.Join(", ", connectedClientss.Select(c => c.Key.ToString()))
                 );
-                WriteMessage(message);
+                // WriteMessage(message);
 
                 connectedClients[pubKey] = true;
                 if (connectedClients.Values.All(v => v))
