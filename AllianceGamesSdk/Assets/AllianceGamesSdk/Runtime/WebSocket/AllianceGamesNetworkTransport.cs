@@ -287,7 +287,12 @@ namespace AllianceGamesSdk.Transport.Unity.Netcode
                     ClientId = server.GetClientId(pubKey),
                     Payload = null
                 };
-                logger.Information("[Unity] AllianceGamesNetworkTransport: server.OnClientConnect {ClientId} and pubkey {PubKey}", message.ClientId, pubKey.Parse());
+                var connectedClientss = NetworkManager.Singleton.ConnectedClients;
+                logger.Information(
+                    "[Unity] AllianceGamesNetworkTransport: server.OnClientConnect {ClientId} connected clients {ConnectedClients}",
+                    message.ClientId,
+                    string.Join(", ", connectedClientss.Select(c => c.Key.ToString()))
+                );
                 WriteMessage(message);
 
                 connectedClients[pubKey] = true;
@@ -342,7 +347,12 @@ namespace AllianceGamesSdk.Transport.Unity.Netcode
                     {
                         if (message.Type == NetworkEvent.Connect)
                         {
-                            logger.Information("[Unity] AllianceGamesNetworkTransport: PollEvent {ClientId}", message.ClientId);
+                            var connectedClients = NetworkManager.Singleton.ConnectedClients;
+                            logger.Information(
+                                "[Unity] AllianceGamesNetworkTransport: PollEvent {ClientId} connected clients {ConnectedClients}",
+                                message.ClientId,
+                                string.Join(", ", connectedClients.Select(c => c.Key.ToString()))
+                            );
                         }
                         clientId = message.ClientId;
                         payload = message.Payload;
