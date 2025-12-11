@@ -131,7 +131,8 @@ namespace AllianceGamesSdk.Transport.Unity.Netcode
 
         internal async UniTask<AllianceGamesServer> CreateServer(
             INodeConfig nodeConfig,
-            ILogger logger
+            ILogger logger,
+            CancellationToken ct = default
         )
         {
             this.logger = logger ?? nodeConfig?.Logger ?? Log.Logger;
@@ -142,7 +143,8 @@ namespace AllianceGamesSdk.Transport.Unity.Netcode
                 server = await AllianceGamesServer.CreateTest(
                     transport,
                     nodeConfig as LocalTestNodeConfig,
-                    new UnityHttpClient()
+                    new UnityHttpClient(),
+                    ct
                 ).AsUniTask();
             }
             else

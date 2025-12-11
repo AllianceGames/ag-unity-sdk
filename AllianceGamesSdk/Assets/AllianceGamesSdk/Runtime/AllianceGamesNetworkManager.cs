@@ -8,6 +8,7 @@ using Serilog;
 using System;
 using Unity.Netcode;
 using Buffer = Chromia.Buffer;
+using System.Threading;
 
 namespace AllianceGamesSdk.Unity.Netcode
 {
@@ -75,10 +76,11 @@ namespace AllianceGamesSdk.Unity.Netcode
 
         public async UniTask<AllianceGamesServer> CreateServer(
             INodeConfig nodeConfig = null,
-            ILogger logger = null
+            ILogger logger = null,
+            CancellationToken ct = default
         )
         {
-            return await transport.CreateServer(nodeConfig, logger);
+            return await transport.CreateServer(nodeConfig, logger, ct);
         }
 
         public async UniTask<bool> StartServer(Func<UniTask<string>> entrypoint)
